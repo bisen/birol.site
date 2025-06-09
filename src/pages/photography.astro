@@ -92,16 +92,17 @@ const sortedPhotos = photos.sort((a, b) => b.data.date.valueOf() - a.data.date.v
 	}
 
 	.photo-item {
-		background: white;
+		background: var(--surface);
 		border-radius: 8px;
 		overflow: hidden;
-		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		box-shadow: var(--box-shadow);
 		transition: transform 0.2s ease, box-shadow 0.2s ease;
 	}
 
 	.photo-item:hover {
 		transform: translateY(-4px);
-		box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+		background: var(--surface-hover);
+		box-shadow: var(--box-shadow);
 	}
 
 	.photo-item img {
