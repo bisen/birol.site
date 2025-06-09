@@ -1,6 +1,5 @@
 name = "birol-site"
 compatibility_date = "2025-01-08"
-pages_build_output_dir = "dist"
 
 [assets]
 directory = "./dist"
