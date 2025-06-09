@@ -19,55 +19,75 @@ import { SITE_TITLE } from '../consts';
 <style>
 	header {
 		margin: 0;
-		padding: 0 1em;
-		background: var(--surface);
+		padding: 1.5rem 2rem;
+		background: rgba(28, 25, 23, 0.95);
 		border-bottom: 1px solid var(--border);
-		position: sticky;
-		top: 0;
-		z-index: 10;
 		backdrop-filter: blur(10px);
-		background: rgba(30, 41, 59, 0.8);
+		-webkit-backdrop-filter: blur(10px);
 	}
+	
 	h2 {
 		margin: 0;
-		font-size: 1em;
+		font-size: 1.125rem;
+		font-weight: 600;
+		font-family: 'Playfair Display', serif;
 	}
 
 	h2 a,
 	h2 a.active {
 		text-decoration: none;
-		color: rgb(var(--black));
+		color: var(--warm-white);
 	}
+	
 	nav {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
+		max-width: 800px;
+		margin: 0 auto;
 	}
+	
 	nav a {
-		padding: 1em 0.5em;
+		padding: 0.5rem 0.75rem;
 		color: rgb(var(--gray-dark));
-		border-bottom: 4px solid transparent;
 		text-decoration: none;
-		transition: all 0.2s ease;
+		transition: color 0.2s ease;
+		font-weight: 400;
+		font-size: 0.95rem;
+		border-bottom: 2px solid transparent;
 	}
+	
 	nav a:hover {
-		color: var(--accent);
+		color: var(--secondary-light);
+		border-bottom-color: var(--secondary-light);
 	}
+	
 	nav a.active {
-		text-decoration: none;
-		border-bottom-color: var(--accent);
-		color: var(--accent);
+		color: var(--secondary-light);
+		border-bottom-color: var(--secondary);
 	}
+	
 	.internal-links {
 		display: flex;
+		gap: 1.5rem;
 	}
-	@media (max-width: 720px) {
-		.internal-links {
-			flex-wrap: wrap;
+	
+	@media (max-width: 768px) {
+		header {
+			padding: 1rem;
 		}
+		
+		.internal-links {
+			gap: 1rem;
+		}
+		
 		nav a {
-			padding: 0.5em 0.3em;
-			font-size: 0.9em;
+			padding: 0.5rem;
+			font-size: 0.875rem;
+		}
+		
+		h2 {
+			font-size: 1rem;
 		}
 	}
 </style>
