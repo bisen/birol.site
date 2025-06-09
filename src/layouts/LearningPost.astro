@@ -1,0 +1,252 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+
+type Props = CollectionEntry<'learnings'>['data'];
+
+const { title, summary, date, category, tags, source, difficulty } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={title} description={summary} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<article>
+				<div class="header">
+					<div class="meta">
+						<FormattedDate date={date} />
+						{difficulty && (
+							<span class={`difficulty ${difficulty}`}>
+								{difficulty}
+							</span>
+						)}
+					</div>
+					<h1>{title}</h1>
+					<p class="summary">{summary}</p>
+					
+					<div class="info-bar">
+						{category && (
+							<span class="category">{category}</span>
+						)}
+						{source && (
+							<span class="source">Source: {source}</span>
+						)}
+					</div>
+					
+					{tags && (
+						<div class="tags">
+							{tags.map((tag) => (
+								<span class="tag">{tag}</span>
+							))}
+						</div>
+					)}
+					<hr />
+				</div>
+				
+				<div class="content">
+					<slot />
+				</div>
+				
+				<div class="back-link">
+					<a href="/learnings">← Back to all learnings</a>
+				</div>
+			</article>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	main {
+		margin: auto;
+		padding: 1rem;
+		width: 800px;
+		max-width: calc(100% - 2rem);
+		color: rgb(var(--gray-dark));
+		line-height: 1.6;
+	}
+	
+	.header {
+		margin-bottom: 2rem;
+	}
+	
+	.meta {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+	
+	.meta time {
+		color: rgb(var(--gray));
+		font-size: 0.9rem;
+	}
+	
+	.difficulty {
+		padding: 0.3rem 0.7rem;
+		border-radius: 12px;
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+		font-weight: 600;
+	}
+
+	.difficulty.beginner {
+		background: #e7f5e7;
+		color: #2d5a2d;
+	}
+
+	.difficulty.intermediate {
+		background: #fff3cd;
+		color: #856404;
+	}
+
+	.difficulty.advanced {
+		background: #f8d7da;
+		color: #721c24;
+	}
+	
+	h1 {
+		margin: 0 0 1rem 0;
+		font-size: 2.2rem;
+		color: rgb(var(--black));
+	}
+	
+	.summary {
+		font-size: 1.2rem;
+		color: rgb(var(--gray-dark));
+		margin: 0 0 1.5rem 0;
+		padding: 1rem;
+		background: rgb(var(--gray-light));
+		border-radius: 8px;
+		border-left: 4px solid rgb(var(--accent));
+	}
+	
+	.info-bar {
+		display: flex;
+		gap: 1rem;
+		align-items: center;
+		margin-bottom: 1rem;
+		flex-wrap: wrap;
+	}
+	
+	.category {
+		background: rgb(var(--accent-light));
+		color: rgb(var(--accent-dark));
+		padding: 0.4rem 0.8rem;
+		border-radius: 4px;
+		font-size: 0.9rem;
+		font-weight: 500;
+	}
+	
+	.source {
+		font-size: 0.9rem;
+		color: rgb(var(--gray));
+		font-style: italic;
+	}
+	
+	.tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-bottom: 1rem;
+	}
+	
+	.tag {
+		background: rgb(var(--gray-light));
+		color: rgb(var(--gray-dark));
+		padding: 0.3rem 0.6rem;
+		border-radius: 12px;
+		font-size: 0.8rem;
+		text-transform: lowercase;
+	}
+	
+	.content {
+		font-size: 1.1rem;
+		margin-bottom: 3rem;
+	}
+	
+	.content :global(h2) {
+		margin-top: 2rem;
+		margin-bottom: 1rem;
+		color: rgb(var(--black));
+	}
+	
+	.content :global(h3) {
+		margin-top: 1.5rem;
+		margin-bottom: 0.75rem;
+		color: rgb(var(--black));
+	}
+	
+	.content :global(code) {
+		background: rgb(var(--gray-light));
+		padding: 0.2rem 0.4rem;
+		border-radius: 4px;
+		font-size: 0.9em;
+	}
+	
+	.content :global(pre) {
+		background: rgb(var(--gray-dark));
+		color: white;
+		padding: 1rem;
+		border-radius: 8px;
+		overflow-x: auto;
+		margin: 1rem 0;
+	}
+	
+	.content :global(blockquote) {
+		border-left: 4px solid rgb(var(--accent));
+		padding-left: 1rem;
+		margin: 1rem 0;
+		font-style: italic;
+		color: rgb(var(--gray-dark));
+	}
+	
+	.back-link {
+		padding-top: 2rem;
+		border-top: 1px solid rgb(var(--gray-light));
+	}
+	
+	.back-link a {
+		color: rgb(var(--accent));
+		text-decoration: none;
+		font-weight: 500;
+	}
+	
+	.back-link a:hover {
+		text-decoration: underline;
+	}
+	
+	@media (max-width: 768px) {
+		h1 {
+			font-size: 1.8rem;
+		}
+		
+		.summary {
+			font-size: 1.1rem;
+		}
+		
+		.content {
+			font-size: 1rem;
+		}
+		
+		.meta {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+		
+		.info-bar {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.5rem;
+		}
+	}
+</style>

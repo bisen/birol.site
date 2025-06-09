@@ -1,0 +1,167 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
+
+type Props = CollectionEntry<'photography' | 'art'>['data'] & {
+	type: 'photography' | 'art';
+};
+
+const { title, description, date, imageUrl, imageAlt, type, ...rest } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={title} description={description} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<article>
+				<div class="hero-image">
+					<img src={imageUrl} alt={imageAlt} />
+				</div>
+				<div class="content">
+					<div class="title">
+						<div class="date">
+							<FormattedDate date={date} />
+						</div>
+						<h1>{title}</h1>
+						<hr />
+					</div>
+					<div class="description">
+						<p>{description}</p>
+					</div>
+					
+					{type === 'photography' && (
+						<div class="metadata">
+							{rest.camera && <p><strong>Camera:</strong> {rest.camera}</p>}
+							{rest.lens && <p><strong>Lens:</strong> {rest.lens}</p>}
+							{rest.settings && <p><strong>Settings:</strong> {rest.settings}</p>}
+						</div>
+					)}
+					
+					{type === 'art' && (
+						<div class="metadata">
+							{rest.medium && <p><strong>Medium:</strong> {rest.medium}</p>}
+							{rest.dimensions && <p><strong>Dimensions:</strong> {rest.dimensions}</p>}
+						</div>
+					)}
+					
+					{rest.tags && (
+						<div class="tags">
+							<h3>Tags</h3>
+							<div class="tag-list">
+								{rest.tags.map((tag) => (
+									<span class="tag">{tag}</span>
+								))}
+							</div>
+						</div>
+					)}
+					
+					<slot />
+				</div>
+			</article>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	main {
+		margin: auto;
+		padding: 1rem;
+		width: 800px;
+		max-width: calc(100% - 2rem);
+		color: rgb(var(--gray-dark));
+		line-height: 1.6;
+	}
+	
+	.hero-image {
+		width: 100%;
+		margin-bottom: 2rem;
+	}
+	
+	.hero-image img {
+		display: block;
+		margin: 0 auto;
+		border-radius: 8px;
+		max-width: 100%;
+		height: auto;
+		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+	}
+	
+	.title {
+		margin-bottom: 2rem;
+	}
+	
+	.date {
+		margin-bottom: 0.5rem;
+		color: rgb(var(--gray));
+		font-size: 0.9rem;
+	}
+	
+	.content h1 {
+		margin: 0;
+		font-size: 2rem;
+		color: rgb(var(--black));
+	}
+	
+	.description {
+		font-size: 1.1rem;
+		margin-bottom: 2rem;
+	}
+	
+	.metadata {
+		background: rgb(var(--gray-light));
+		padding: 1rem;
+		border-radius: 8px;
+		margin-bottom: 2rem;
+	}
+	
+	.metadata p {
+		margin: 0.5rem 0;
+		font-size: 0.9rem;
+	}
+	
+	.tags {
+		margin-top: 2rem;
+		padding-top: 2rem;
+		border-top: 1px solid rgb(var(--gray-light));
+	}
+	
+	.tags h3 {
+		margin: 0 0 1rem 0;
+		font-size: 1rem;
+		color: rgb(var(--gray-dark));
+	}
+	
+	.tag-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	
+	.tag {
+		background: rgb(var(--accent-light));
+		color: rgb(var(--accent-dark));
+		padding: 0.3rem 0.6rem;
+		border-radius: 4px;
+		font-size: 0.8rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+	
+	@media (max-width: 768px) {
+		.content h1 {
+			font-size: 1.5rem;
+		}
+		
+		.description {
+			font-size: 1rem;
+		}
+	}
+</style>

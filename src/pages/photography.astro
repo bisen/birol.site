@@ -1,0 +1,163 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE } from '../consts';
+import { getCollection } from 'astro:content';
+
+const photos = await getCollection('photography');
+const sortedPhotos = photos.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Photography - ${SITE_TITLE}`} description="Photography portfolio by Birol Senturk" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section>
+				<h1>Photography</h1>
+				<p>A collection of moments captured through my lens.</p>
+			</section>
+			<section class="gallery">
+				{sortedPhotos.length === 0 ? (
+					<p class="no-items">No photographs to display yet. Check back soon!</p>
+				) : (
+					<div class="photo-grid">
+						{sortedPhotos.map((photo) => (
+							<article class="photo-item">
+								<img 
+									src={photo.data.imageUrl} 
+									alt={photo.data.imageAlt}
+									loading="lazy"
+								/>
+								<div class="photo-info">
+									<h3>{photo.data.title}</h3>
+									<p class="description">{photo.data.description}</p>
+									{photo.data.camera && (
+										<p class="meta">Camera: {photo.data.camera}</p>
+									)}
+									{photo.data.lens && (
+										<p class="meta">Lens: {photo.data.lens}</p>
+									)}
+									{photo.data.settings && (
+										<p class="meta">Settings: {photo.data.settings}</p>
+									)}
+									{photo.data.tags && (
+										<div class="tags">
+											{photo.data.tags.map((tag) => (
+												<span class="tag">{tag}</span>
+											))}
+										</div>
+									)}
+								</div>
+							</article>
+						))}
+					</div>
+				)}
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	main {
+		margin: auto;
+		padding: 1rem;
+		width: 1200px;
+		max-width: calc(100% - 2rem);
+		color: rgb(var(--gray-dark));
+		line-height: 1.6;
+	}
+	
+	.gallery {
+		margin-top: 2rem;
+	}
+
+	.no-items {
+		text-align: center;
+		color: rgb(var(--gray));
+		font-style: italic;
+		margin: 2rem 0;
+	}
+
+	.photo-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		gap: 2rem;
+		margin-top: 2rem;
+	}
+
+	.photo-item {
+		background: white;
+		border-radius: 8px;
+		overflow: hidden;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.photo-item:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+	}
+
+	.photo-item img {
+		width: 100%;
+		height: 250px;
+		object-fit: cover;
+		display: block;
+	}
+
+	.photo-info {
+		padding: 1rem;
+	}
+
+	.photo-info h3 {
+		margin: 0 0 0.5rem 0;
+		font-size: 1.1rem;
+		color: rgb(var(--black));
+	}
+
+	.description {
+		margin: 0 0 0.5rem 0;
+		color: rgb(var(--gray-dark));
+		font-size: 0.9rem;
+	}
+
+	.meta {
+		margin: 0.25rem 0;
+		font-size: 0.8rem;
+		color: rgb(var(--gray));
+	}
+
+	.tags {
+		margin-top: 0.5rem;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem;
+	}
+
+	.tag {
+		background: rgb(var(--accent-light));
+		color: rgb(var(--accent-dark));
+		padding: 0.2rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	@media (max-width: 768px) {
+		.photo-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+		
+		.photo-item img {
+			height: 200px;
+		}
+	}
+</style>

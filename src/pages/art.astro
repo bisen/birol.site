@@ -1,0 +1,168 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE_TITLE } from '../consts';
+import { getCollection } from 'astro:content';
+
+const artworks = await getCollection('art');
+const sortedArtworks = artworks.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Art - ${SITE_TITLE}`} description="Art portfolio by Birol Senturk" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section>
+				<h1>Art</h1>
+				<p>A showcase of my creative explorations and artistic expressions.</p>
+			</section>
+			<section class="gallery">
+				{sortedArtworks.length === 0 ? (
+					<p class="no-items">No artworks to display yet. Check back soon!</p>
+				) : (
+					<div class="art-grid">
+						{sortedArtworks.map((artwork) => (
+							<article class="art-item">
+								<img 
+									src={artwork.data.imageUrl} 
+									alt={artwork.data.imageAlt}
+									loading="lazy"
+								/>
+								<div class="art-info">
+									<h3>{artwork.data.title}</h3>
+									<p class="description">{artwork.data.description}</p>
+									{artwork.data.medium && (
+										<p class="meta">Medium: {artwork.data.medium}</p>
+									)}
+									{artwork.data.dimensions && (
+										<p class="meta">Dimensions: {artwork.data.dimensions}</p>
+									)}
+									<p class="date">{artwork.data.date.toLocaleDateString()}</p>
+									{artwork.data.tags && (
+										<div class="tags">
+											{artwork.data.tags.map((tag) => (
+												<span class="tag">{tag}</span>
+											))}
+										</div>
+									)}
+								</div>
+							</article>
+						))}
+					</div>
+				)}
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	main {
+		margin: auto;
+		padding: 1rem;
+		width: 1200px;
+		max-width: calc(100% - 2rem);
+		color: rgb(var(--gray-dark));
+		line-height: 1.6;
+	}
+	
+	.gallery {
+		margin-top: 2rem;
+	}
+
+	.no-items {
+		text-align: center;
+		color: rgb(var(--gray));
+		font-style: italic;
+		margin: 2rem 0;
+	}
+
+	.art-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+		gap: 2rem;
+		margin-top: 2rem;
+	}
+
+	.art-item {
+		background: white;
+		border-radius: 8px;
+		overflow: hidden;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
+	}
+
+	.art-item:hover {
+		transform: translateY(-4px);
+		box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+	}
+
+	.art-item img {
+		width: 100%;
+		height: 280px;
+		object-fit: cover;
+		display: block;
+	}
+
+	.art-info {
+		padding: 1rem;
+	}
+
+	.art-info h3 {
+		margin: 0 0 0.5rem 0;
+		font-size: 1.2rem;
+		color: rgb(var(--black));
+	}
+
+	.description {
+		margin: 0 0 0.5rem 0;
+		color: rgb(var(--gray-dark));
+		font-size: 0.9rem;
+	}
+
+	.meta {
+		margin: 0.25rem 0;
+		font-size: 0.8rem;
+		color: rgb(var(--gray));
+	}
+
+	.date {
+		margin: 0.5rem 0;
+		font-size: 0.8rem;
+		color: rgb(var(--gray));
+		font-style: italic;
+	}
+
+	.tags {
+		margin-top: 0.5rem;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem;
+	}
+
+	.tag {
+		background: rgb(var(--accent-light));
+		color: rgb(var(--accent-dark));
+		padding: 0.2rem 0.5rem;
+		border-radius: 4px;
+		font-size: 0.7rem;
+		text-transform: uppercase;
+		letter-spacing: 0.5px;
+	}
+
+	@media (max-width: 768px) {
+		.art-grid {
+			grid-template-columns: 1fr;
+			gap: 1rem;
+		}
+		
+		.art-item img {
+			height: 220px;
+		}
+	}
+</style>
