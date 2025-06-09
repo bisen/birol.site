@@ -37,6 +37,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 					<ul class="link-list">
 						<li><a href="https://twitter.com/senturkbirol" target="_blank">Twitter</a></li>
 						<li><a href="https://github.com/bisen" target="_blank">GitHub</a></li>
+						<li><a href="https://www.linkedin.com/in/birolsenturk" target="_blank">LinkedIn</a></li>
 						<li><a href="mailto:birolsenturk@outlook.com">Email</a></li>
 						<li><a href="https://bisen.github.io/cv/" target="_blank">CV</a></li>
 					</ul>
@@ -46,14 +47,19 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 					<h3>Current Work</h3>
 					<ul class="project-list">
 						<li class="project-item">
+							<a href="https://4xdigital.ai" target="_blank">4XDigital.ai</a>
+							<span class="project-desc">Making advertising accessible to SMBs</span>
+							<span class="project-status active">• Active</span>
+						</li>
+						<li class="project-item">
 							<a href="https://sevkio.com" target="_blank">Sevkio</a>
 							<span class="project-desc">Logistics tool for small businesses</span>
-							<span class="project-status">WIP</span>
+							<span class="project-status wip">• WIP</span>
 						</li>
 						<li class="project-item">
 							<a href="https://forgekit.org" target="_blank">ForgeKit</a>
 							<span class="project-desc">LLM powered personal branding toolkit</span>
-							<span class="project-status">WIP</span>
+							<span class="project-status wip">• WIP</span>
 						</li>
 					</ul>
 				</section>
@@ -123,7 +129,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	.sidebar h3 {
 		font-size: 1rem;
 		margin-bottom: 1.25rem;
-		color: var(--secondary-light);
+		color: var(--accent-light);
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 		font-weight: 600;
@@ -140,7 +146,7 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 		transform: translateY(-50%);
 		width: 4px;
 		height: 4px;
-		background: var(--secondary);
+		background: var(--accent);
 		border-radius: 50%;
 	}
 	
@@ -177,14 +183,14 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 		transform: translateY(-50%);
 		width: 8px;
 		height: 1px;
-		background: var(--secondary);
+		background: var(--accent);
 		opacity: 0;
 		transition: opacity 0.2s ease;
 	}
 	
 	.link-list a:hover {
-		color: var(--secondary-light);
-		border-bottom-color: var(--secondary);
+		color: var(--accent-light);
+		border-bottom-color: var(--accent);
 	}
 	
 	.link-list a:hover::after {
@@ -192,19 +198,12 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	}
 	
 	.project-item {
-		margin-bottom: 1.5rem;
-		padding: 1.25rem;
-		background: rgba(74, 93, 35, 0.05);
-		border-radius: 8px;
-		border-left: 3px solid var(--secondary);
-		transition: all 0.2s ease;
-		position: relative;
+		margin-bottom: 1.25rem;
+		transition: transform 0.2s ease;
 	}
 	
 	.project-item:hover {
-		background: rgba(74, 93, 35, 0.08);
-		transform: translateY(-1px);
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		transform: translateX(4px);
 	}
 	
 	.project-item:last-child {
@@ -212,39 +211,42 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	}
 	
 	.project-item a {
-		display: block;
-		font-size: 1.2rem;
-		font-weight: 600;
-		margin-bottom: 0.5rem;
+		display: inline-block;
+		font-size: 1.1rem;
+		font-weight: 500;
+		margin-bottom: 0.25rem;
 		text-decoration: none;
 		color: rgb(var(--black));
 		transition: color 0.2s ease;
 	}
 	
 	.project-item:hover a {
-		color: var(--secondary-light);
+		color: var(--accent-light);
 	}
 	
 	.project-desc {
-		font-size: 1rem;
+		font-size: 0.875rem;
 		color: rgb(var(--gray));
-		font-style: italic;
 		display: block;
-		margin-bottom: 0.5rem;
+		margin-bottom: 0.25rem;
+		line-height: 1.4;
 	}
 	
 	.project-status {
-		font-size: 0.85rem;
-		color: var(--secondary);
+		font-size: 0.7rem;
 		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
-		position: absolute;
-		top: 1rem;
-		right: 1rem;
-		background: rgba(74, 93, 35, 0.1);
-		padding: 0.25rem 0.5rem;
-		border-radius: 4px;
+		color: rgb(var(--gray));
+		display: inline-block;
+	}
+	
+	.project-status.active {
+		color: var(--secondary-light);
+	}
+	
+	.project-status.wip {
+		color: var(--accent);
 	}
 	
 	@media (max-width: 768px) {
