@@ -51,28 +51,35 @@
 	let smoothVelY = 0;
 	let vortexStrengthCurrent = 0;
 	let time = 0;
+	let lastTime = 0;
+	let deltaTime = 0.016; // Default to ~60fps, will be updated each frame
 
 	function lerp(a: number, b: number, t: number): number {
 		return a + (b - a) * t;
 	}
 
 	function updateMouseState() {
+		// Scale interpolation factors by deltaTime (normalized to 60fps)
+		const dtScale = deltaTime * 60;
+
 		prevMouseX = mouseX;
 		prevMouseY = mouseY;
-		mouseX = lerp(mouseX, targetMouseX, 0.08);
-		mouseY = lerp(mouseY, targetMouseY, 0.08);
-		mouseVelX = mouseX - prevMouseX;
-		mouseVelY = mouseY - prevMouseY;
+		const mouseLerp = 1 - Math.pow(1 - 0.08, dtScale);
+		mouseX = lerp(mouseX, targetMouseX, mouseLerp);
+		mouseY = lerp(mouseY, targetMouseY, mouseLerp);
+		mouseVelX = (mouseX - prevMouseX) / deltaTime * 0.016; // Normalize velocity
+		mouseVelY = (mouseY - prevMouseY) / deltaTime * 0.016;
 
-		const velInertia = 0.92;
-		const velResponse = 0.15;
+		const velInertia = Math.pow(0.92, dtScale);
+		const velResponse = 0.15 * dtScale;
 		smoothVelX = smoothVelX * velInertia + mouseVelX * velResponse;
 		smoothVelY = smoothVelY * velInertia + mouseVelY * velResponse;
 
 		const currentVelMagnitude = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
 		const targetVortexStrength = Math.min(currentVelMagnitude * 80, 2.5);
-		const vortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02;
-		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexInertia);
+		const baseVortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02;
+		const vortexLerp = 1 - Math.pow(1 - baseVortexInertia, dtScale);
+		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexLerp);
 	}
 
 	// ============================================================
@@ -263,6 +270,7 @@
 	function buildParticleData(positionData: Float32Array, colorData: Float32Array): number {
 		let quadCount = 0;
 		const aspectRatio = width / height;
+		const dtScale = deltaTime * 60; // Normalize to 60fps
 
 		for (let i = 0; i < particles.length; i++) {
 			const p = particles[i];
@@ -270,10 +278,10 @@
 			p.prevY = p.y;
 
 			const angle = getFlowAngle(p.x, p.y);
-			const speed = p.speed * 0.004;
+			const speed = p.speed * 0.004 * dtScale; // Scale by deltaTime
 			p.x += Math.cos(angle) * speed;
 			p.y += Math.sin(angle) * speed;
-			p.life++;
+			p.life += dtScale; // Scale life increment by deltaTime
 
 			if (p.x < -0.1 || p.x > 1.1 || p.y < -0.1 || p.y > 1.1 || p.life > p.maxLife) {
 				resetParticle(p);
@@ -594,12 +602,24 @@
 			device.queue.submit([encoder.finish()]);
 		}
 
-		function animate() {
-			time += 0.016;
+		function animate(currentTime: number) {
+			// Calculate delta time in seconds
+			if (lastTime === 0) {
+				lastTime = currentTime;
+				requestAnimationFrame(animate);
+				return; // Skip first frame to establish baseline
+			}
+			deltaTime = Math.max(0.001, Math.min((currentTime - lastTime) / 1000, 0.1)); // Clamp 1ms to 100ms
+			lastTime = currentTime;
+
+			time += deltaTime;
 			updateMouseState();
 
-			const fadeAmount = 0.012;
-			const keepAmount = 1.0 - fadeAmount;
+			// Scale fade by deltaTime - at 60fps, keep 99.2% per frame (longer trails)
+			// After 1 second at any framerate: 0.992^60 ≈ 0.618 remaining
+			const baseKeepPerFrame = 0.992;
+			const keepAmount = Math.pow(baseKeepPerFrame, deltaTime * 60);
+			const fadeAmount = 1.0 - keepAmount;
 
 			fadeMultiplyData[0] = keepAmount;
 			fadeMultiplyData[1] = keepAmount;
@@ -690,7 +710,7 @@
 				started = true;
 				initParticles();
 				resize();
-				animate();
+				requestAnimationFrame(animate);
 				console.log('🚀 WebGPU renderer active');
 			}
 		});
@@ -829,12 +849,23 @@
 			gl!.clear(gl!.COLOR_BUFFER_BIT);
 		}
 
-		function animate() {
-			time += 0.016;
+		function animate(currentTime: number) {
+			// Calculate delta time in seconds
+			if (lastTime === 0) {
+				lastTime = currentTime;
+				requestAnimationFrame(animate);
+				return; // Skip first frame to establish baseline
+			}
+			deltaTime = Math.max(0.001, Math.min((currentTime - lastTime) / 1000, 0.1)); // Clamp 1ms to 100ms
+			lastTime = currentTime;
+
+			time += deltaTime;
 			updateMouseState();
 
-			const fadeAmount = 0.012;
-			const keepAmount = 1.0 - fadeAmount;
+			// Scale fade by deltaTime - at 60fps, keep 99.2% per frame (longer trails)
+			const baseKeepPerFrame = 0.992;
+			const keepAmount = Math.pow(baseKeepPerFrame, deltaTime * 60);
+			const fadeAmount = 1.0 - keepAmount;
 
 			gl!.useProgram(fadeProgram);
 			gl!.bindBuffer(gl!.ARRAY_BUFFER, fadeBuffer);
@@ -880,7 +911,7 @@
 				initParticles();
 				gl!.clearColor(bgR, bgG, bgB, 1);
 				gl!.clear(gl!.COLOR_BUFFER_BIT);
-				animate();
+				requestAnimationFrame(animate);
 				console.log('⚠️ WebGL fallback renderer active (WebGPU not available)');
 			}
 		});

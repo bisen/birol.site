@@ -233,6 +233,19 @@ const posts = (await getCollection('blog')).sort(
 		position: relative;
 	}
 
+	/* Blurred light backdrop behind text to lighten particles */
+	.hero-intro::before,
+	.hero-text::before {
+		content: '';
+		position: absolute;
+		inset: -60px;
+		background: rgba(255, 255, 255, 0.85);
+		filter: blur(50px);
+		z-index: -1;
+		pointer-events: none;
+		mix-blend-mode: lighten;
+	}
+
 	.hero-greeting {
 		display: block;
 		font-family: var(--font-body);
@@ -300,6 +313,7 @@ const posts = (await getCollection('blog')).sort(
 
 	/* Hero Text Block */
 	.hero-text {
+		position: relative;
 		max-width: 420px;
 		opacity: 0;
 		animation: fadeSlideUp 0.6s ease forwards;
