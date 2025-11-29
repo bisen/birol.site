@@ -48,6 +48,9 @@
 	let prevMouseY = 0.5;
 	let mouseVelX = 0;
 	let mouseVelY = 0;
+	let smoothVelX = 0;
+	let smoothVelY = 0;
+	let vortexStrengthCurrent = 0;
 	let time = 0;
 
 	// Simplex noise for flow field
@@ -170,14 +173,15 @@
 		const dy = y - mouseY;
 		const dist = Math.sqrt(dx * dx + dy * dy);
 
-		// Create a vortex around cursor
-		const vortexStrength = Math.exp(-dist * dist * 15) * 2.5;
+		// Create a vortex around cursor - use smoothed vortex strength with inertia
+		const distanceFactor = Math.exp(-dist * dist * 15);
+		const vortexStrength = distanceFactor * vortexStrengthCurrent;
 		const vortexAngle = Math.atan2(dy, dx) + Math.PI / 2; // Perpendicular = rotation
 
-		// Mouse velocity influence - push particles in direction of mouse movement
+		// Mouse velocity influence - use smoothed velocity for inertia
 		const pushStrength = Math.exp(-dist * dist * 8) * 3;
-		const pushAngle = Math.atan2(mouseVelY, mouseVelX);
-		const velMagnitude = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
+		const pushAngle = Math.atan2(smoothVelY, smoothVelX);
+		const velMagnitude = Math.sqrt(smoothVelX * smoothVelX + smoothVelY * smoothVelY);
 
 		// Blend angles
 		let finalAngle = angle + drift;
@@ -247,6 +251,18 @@
 		mouseY = lerp(mouseY, targetMouseY, 0.08);
 		mouseVelX = mouseX - prevMouseX;
 		mouseVelY = mouseY - prevMouseY;
+
+		// Smooth velocity with inertia - builds up and decays gradually
+		const velInertia = 0.92; // Higher = more inertia, slower decay
+		const velResponse = 0.15; // How quickly it responds to new velocity
+		smoothVelX = smoothVelX * velInertia + mouseVelX * velResponse;
+		smoothVelY = smoothVelY * velInertia + mouseVelY * velResponse;
+
+		// Smooth vortex strength based on mouse activity
+		const currentVelMagnitude = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
+		const targetVortexStrength = Math.min(currentVelMagnitude * 80, 2.5);
+		const vortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02; // Fast rise, slow decay
+		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexInertia);
 
 		// Fade effect - creates trails
 		ctx.fillStyle = 'rgba(250, 247, 242, 0.035)';
