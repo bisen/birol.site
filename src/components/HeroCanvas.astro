@@ -133,7 +133,7 @@
 	}
 
 	const particles: Particle[] = [];
-	const PARTICLE_COUNT = 800;
+	const PARTICLE_COUNT = 1200;
 
 	function createParticle(): Particle {
 		const x = Math.random();
@@ -304,17 +304,17 @@
 				const proximity = Math.exp(-dist * dist * 8);
 
 				if (p.hue === 1) {
-					// Orange particles
-					const r = 217;
-					const g = 93 + proximity * 40;
-					const b = 57;
-					ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * (0.6 + proximity * 0.4)})`;
-					ctx.lineWidth = 1.5 + proximity * 1.5;
+					// Orange particles - brighter
+					const r = 230;
+					const g = 105 + proximity * 50;
+					const b = 65;
+					ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * (0.85 + proximity * 0.15)})`;
+					ctx.lineWidth = 1.8 + proximity * 1.5;
 				} else {
-					// Gray particles
-					const gray = 180 + proximity * 30;
-					ctx.strokeStyle = `rgba(${gray}, ${gray - 10}, ${gray - 15}, ${alpha * (0.35 + proximity * 0.25)})`;
-					ctx.lineWidth = 1 + proximity * 0.5;
+					// Gray particles - brighter
+					const gray = 200 + proximity * 35;
+					ctx.strokeStyle = `rgba(${gray}, ${gray - 8}, ${gray - 12}, ${alpha * (0.55 + proximity * 0.3)})`;
+					ctx.lineWidth = 1.2 + proximity * 0.6;
 				}
 
 				ctx.lineCap = 'round';
