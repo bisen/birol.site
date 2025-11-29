@@ -210,26 +210,27 @@
 		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 	}
 
-	function init() {
-		resize();
-		initParticles();
+	let animating = false;
 
-		window.addEventListener('resize', () => {
+	function init() {
+		const resizeObserver = new ResizeObserver(() => {
 			resize();
-			initParticles();
+			if (!animating) {
+				animating = true;
+				initParticles();
+				ctx.fillStyle = colors.cream;
+				ctx.fillRect(0, 0, width, height);
+				animate();
+			}
 		});
+
+		resizeObserver.observe(container);
 
 		document.addEventListener('mousemove', (e) => {
 			const rect = container.getBoundingClientRect();
 			targetMouseX = (e.clientX - rect.left) / width;
 			targetMouseY = (e.clientY - rect.top) / height;
 		});
-
-		// Initial fade-in of background
-		ctx.fillStyle = colors.cream;
-		ctx.fillRect(0, 0, width, height);
-
-		animate();
 	}
 
 	function lerp(a: number, b: number, t: number): number {
