@@ -1,5 +1,5 @@
 ---
-// Flow Field - Particles flowing through a dynamic velocity field with cursor vortex
+// Flow Field - WebGL particle system with cursor vortex
 ---
 
 <div id="hero-canvas-container">
@@ -26,34 +26,172 @@
 <script>
 	const canvas = document.getElementById('hero-canvas') as HTMLCanvasElement;
 	const container = document.getElementById('hero-canvas-container')!;
-	const ctx = canvas.getContext('2d')!;
 
-	const colors = {
-		orange: '#D95D39',
-		orangeLight: '#E8886A',
-		orangeFaded: 'rgba(217, 93, 57, 0.15)',
-		ink: '#1A1A1A',
-		cream: '#FAF7F2',
-		warmGray: '#E8E4DF',
-		warmGrayDark: '#D4CFC8'
-	};
+	// WebGL setup
+	const gl = canvas.getContext('webgl', {
+		alpha: true,
+		premultipliedAlpha: false,
+		antialias: true,
+		preserveDrawingBuffer: true
+	})!;
 
-	let width = 0;
-	let height = 0;
-	let mouseX = 0.5;
-	let mouseY = 0.5;
-	let targetMouseX = 0.5;
-	let targetMouseY = 0.5;
-	let prevMouseX = 0.5;
-	let prevMouseY = 0.5;
-	let mouseVelX = 0;
-	let mouseVelY = 0;
-	let smoothVelX = 0;
-	let smoothVelY = 0;
-	let vortexStrengthCurrent = 0;
-	let time = 0;
+	if (!gl) {
+		console.error('WebGL not supported');
+		throw new Error('WebGL not supported');
+	}
 
-	// Simplex noise for flow field
+	// Enable blending for transparency
+	gl.enable(gl.BLEND);
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+	// Shader sources
+	const vertexShaderSource = `
+		attribute vec2 a_position;
+		attribute vec2 a_prevPosition;
+		attribute vec4 a_color;
+		attribute float a_size;
+
+		varying vec4 v_color;
+
+		void main() {
+			gl_Position = vec4(a_position * 2.0 - 1.0, 0.0, 1.0);
+			gl_Position.y *= -1.0;
+			gl_PointSize = a_size;
+			v_color = a_color;
+		}
+	`;
+
+	const fragmentShaderSource = `
+		precision mediump float;
+		varying vec4 v_color;
+
+		void main() {
+			// Soft circular point
+			vec2 coord = gl_PointCoord - vec2(0.5);
+			float dist = length(coord);
+			float alpha = 1.0 - smoothstep(0.3, 0.5, dist);
+			gl_FragColor = vec4(v_color.rgb, v_color.a * alpha);
+		}
+	`;
+
+	// Line shaders for trails
+	const lineVertexShaderSource = `
+		attribute vec2 a_position;
+		attribute vec4 a_color;
+
+		varying vec4 v_color;
+
+		void main() {
+			gl_Position = vec4(a_position * 2.0 - 1.0, 0.0, 1.0);
+			gl_Position.y *= -1.0;
+			v_color = a_color;
+		}
+	`;
+
+	const lineFragmentShaderSource = `
+		precision mediump float;
+		varying vec4 v_color;
+
+		void main() {
+			gl_FragColor = v_color;
+		}
+	`;
+
+	// Fade shader for trail effect
+	const fadeVertexShaderSource = `
+		attribute vec2 a_position;
+
+		void main() {
+			gl_Position = vec4(a_position, 0.0, 1.0);
+		}
+	`;
+
+	const fadeFragmentShaderSource = `
+		precision mediump float;
+		uniform vec4 u_color;
+
+		void main() {
+			gl_FragColor = u_color;
+		}
+	`;
+
+	function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader {
+		const shader = gl.createShader(type)!;
+		gl.shaderSource(shader, source);
+		gl.compileShader(shader);
+		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+			console.error('Shader compile error:', gl.getShaderInfoLog(shader));
+			gl.deleteShader(shader);
+			throw new Error('Shader compilation failed');
+		}
+		return shader;
+	}
+
+	function createProgram(gl: WebGLRenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram {
+		const program = gl.createProgram()!;
+		gl.attachShader(program, vertexShader);
+		gl.attachShader(program, fragmentShader);
+		gl.linkProgram(program);
+		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+			console.error('Program link error:', gl.getProgramInfoLog(program));
+			throw new Error('Program linking failed');
+		}
+		return program;
+	}
+
+	// Create shader programs
+	const lineProgram = createProgram(gl,
+		createShader(gl, gl.VERTEX_SHADER, lineVertexShaderSource),
+		createShader(gl, gl.FRAGMENT_SHADER, lineFragmentShaderSource)
+	);
+
+	const fadeProgram = createProgram(gl,
+		createShader(gl, gl.VERTEX_SHADER, fadeVertexShaderSource),
+		createShader(gl, gl.FRAGMENT_SHADER, fadeFragmentShaderSource)
+	);
+
+	// Get attribute and uniform locations
+	const linePositionLoc = gl.getAttribLocation(lineProgram, 'a_position');
+	const lineColorLoc = gl.getAttribLocation(lineProgram, 'a_color');
+
+	const fadePositionLoc = gl.getAttribLocation(fadeProgram, 'a_position');
+	const fadeColorLoc = gl.getUniformLocation(fadeProgram, 'u_color');
+
+	// Create buffers
+	const linePositionBuffer = gl.createBuffer()!;
+	const lineColorBuffer = gl.createBuffer()!;
+
+	// Fullscreen quad for fade effect
+	const fadeBuffer = gl.createBuffer()!;
+	gl.bindBuffer(gl.ARRAY_BUFFER, fadeBuffer);
+	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+		-1, -1, 1, -1, -1, 1,
+		-1, 1, 1, -1, 1, 1
+	]), gl.STATIC_DRAW);
+
+	// Particle system
+	const PARTICLE_COUNT = 1200;
+
+	interface Particle {
+		x: number;
+		y: number;
+		prevX: number;
+		prevY: number;
+		life: number;
+		maxLife: number;
+		speed: number;
+		colorType: number;
+		hueShift: number;
+		lightShift: number;
+		// Precomputed colors
+		r: number;
+		g: number;
+		b: number;
+	}
+
+	const particles: Particle[] = [];
+
+	// Simplex noise
 	class SimplexNoise {
 		private perm: number[] = [];
 		private grad3 = [
@@ -124,20 +262,7 @@
 
 	const noise = new SimplexNoise(42);
 
-	interface Particle {
-		x: number;
-		y: number;
-		prevX: number;
-		prevY: number;
-		life: number;
-		maxLife: number;
-		speed: number;
-		colorType: number; // 0 = warm tones, 1 = cool accents
-		hueShift: number; // Per-particle hue variation (-1 to 1)
-		lightShift: number; // Per-particle lightness variation (-1 to 1)
-	}
-
-	// HSL to RGB conversion for high chroma colors
+	// HSL to RGB
 	function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 		const c = (1 - Math.abs(2 * l - 1)) * s;
 		const x = c * (1 - Math.abs((h / 60) % 2 - 1));
@@ -151,31 +276,74 @@
 		else if (h < 300) { r = x; g = 0; b = c; }
 		else { r = c; g = 0; b = x; }
 
-		return [
-			Math.round((r + m) * 255),
-			Math.round((g + m) * 255),
-			Math.round((b + m) * 255)
-		];
+		return [r + m, g + m, b + m];
 	}
 
-	const particles: Particle[] = [];
-	const PARTICLE_COUNT = 1200;
+	function computeParticleColor(colorType: number, hueShift: number, lightShift: number): [number, number, number] {
+		if (colorType === 0) {
+			// Warm gray particles (majority)
+			const gray = 0.75 + lightShift * 0.08; // Range: 0.67-0.83
+			// Slight warm tint
+			return [gray, gray - 0.02, gray - 0.04];
+		} else if (colorType === 1) {
+			// Orange/coral particles
+			const baseHue = 18 + hueShift * 12;
+			const sat = 0.75 + lightShift * 0.1;
+			const light = 0.38 + lightShift * 0.08;
+			return hslToRgb(baseHue, sat, light);
+		} else {
+			// Teal/blue accent particles
+			const baseHue = 195 + hueShift * 20;
+			const sat = 0.55 + lightShift * 0.15;
+			const light = 0.35 + lightShift * 0.08;
+			return hslToRgb(baseHue, sat, light);
+		}
+	}
 
 	function createParticle(): Particle {
 		const x = Math.random();
 		const y = Math.random();
+		// 70% gray, 20% orange, 10% teal
+		const rand = Math.random();
+		const colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
+		const hueShift = (Math.random() - 0.5) * 2;
+		const lightShift = (Math.random() - 0.5) * 2;
+		const [r, g, b] = computeParticleColor(colorType, hueShift, lightShift);
+
 		return {
-			x,
-			y,
+			x, y,
 			prevX: x,
 			prevY: y,
 			life: Math.random() * 200,
 			maxLife: 150 + Math.random() * 150,
 			speed: 0.3 + Math.random() * 0.4,
-			colorType: Math.random() < 0.3 ? 1 : 0, // 30% cool accents, 70% warm
-			hueShift: (Math.random() - 0.5) * 2, // -1 to 1
-			lightShift: (Math.random() - 0.5) * 2 // -1 to 1
+			colorType,
+			hueShift,
+			lightShift,
+			r, g, b
 		};
+	}
+
+	function resetParticle(p: Particle) {
+		if (Math.random() < 0.5) {
+			p.x = -0.05;
+			p.y = Math.random();
+		} else {
+			p.x = Math.random();
+			p.y = Math.random() < 0.5 ? -0.05 : 1.05;
+		}
+		p.prevX = p.x;
+		p.prevY = p.y;
+		p.life = 0;
+		p.maxLife = 150 + Math.random() * 150;
+		const rand = Math.random();
+		p.colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
+		p.hueShift = (Math.random() - 0.5) * 2;
+		p.lightShift = (Math.random() - 0.5) * 2;
+		const [r, g, b] = computeParticleColor(p.colorType, p.hueShift, p.lightShift);
+		p.r = r;
+		p.g = g;
+		p.b = b;
 	}
 
 	function initParticles() {
@@ -185,47 +353,56 @@
 		}
 	}
 
+	// Mouse state
+	let width = 0;
+	let height = 0;
+	let mouseX = 0.5;
+	let mouseY = 0.5;
+	let targetMouseX = 0.5;
+	let targetMouseY = 0.5;
+	let prevMouseX = 0.5;
+	let prevMouseY = 0.5;
+	let mouseVelX = 0;
+	let mouseVelY = 0;
+	let smoothVelX = 0;
+	let smoothVelY = 0;
+	let vortexStrengthCurrent = 0;
+	let time = 0;
+
+	function lerp(a: number, b: number, t: number): number {
+		return a + (b - a) * t;
+	}
+
+	function lerpAngle(a: number, b: number, t: number): number {
+		const diff = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+		return a + diff * Math.min(t, 1);
+	}
+
 	function getFlowAngle(x: number, y: number): number {
-		// Base flow from curl noise
 		const scale = 2.5;
 		const angle = noise.noise2D(x * scale + time * 0.1, y * scale) * Math.PI * 2;
-
-		// Add subtle horizontal drift
 		const drift = Math.sin(y * 3 + time * 0.2) * 0.3;
 
-		// Mouse vortex influence
 		const dx = x - mouseX;
 		const dy = y - mouseY;
 		const dist = Math.sqrt(dx * dx + dy * dy);
 
-		// Create a vortex around cursor - use smoothed vortex strength with inertia
 		const distanceFactor = Math.exp(-dist * dist * 15);
 		const vortexStrength = distanceFactor * vortexStrengthCurrent;
-		const vortexAngle = Math.atan2(dy, dx) + Math.PI / 2; // Perpendicular = rotation
+		const vortexAngle = Math.atan2(dy, dx) + Math.PI / 2;
 
-		// Mouse velocity influence - use smoothed velocity for inertia
 		const pushStrength = Math.exp(-dist * dist * 8) * 3;
 		const pushAngle = Math.atan2(smoothVelY, smoothVelX);
 		const velMagnitude = Math.sqrt(smoothVelX * smoothVelX + smoothVelY * smoothVelY);
 
-		// Blend angles
 		let finalAngle = angle + drift;
-
-		// Add vortex
 		finalAngle = lerpAngle(finalAngle, vortexAngle, vortexStrength);
 
-		// Add push from mouse movement
 		if (velMagnitude > 0.001) {
 			finalAngle = lerpAngle(finalAngle, pushAngle, pushStrength * Math.min(velMagnitude * 50, 1));
 		}
 
 		return finalAngle;
-	}
-
-	function lerpAngle(a: number, b: number, t: number): number {
-		// Properly interpolate angles
-		const diff = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
-		return a + diff * Math.min(t, 1);
 	}
 
 	function resize() {
@@ -236,7 +413,140 @@
 		const dpr = Math.min(window.devicePixelRatio || 1, 2);
 		canvas.width = width * dpr;
 		canvas.height = height * dpr;
-		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		gl.viewport(0, 0, canvas.width, canvas.height);
+	}
+
+	// Typed arrays for batch rendering - 6 vertices per quad (2 triangles), 2 coords each
+	let positionData = new Float32Array(PARTICLE_COUNT * 12);
+	let colorData = new Float32Array(PARTICLE_COUNT * 24); // 6 vertices, 4 color components each
+
+	// Line thickness in normalized coordinates (adjusted for aspect ratio in render)
+	const BASE_THICKNESS = 0.003;
+
+	function animate() {
+		time += 0.016;
+
+		// Update mouse with inertia
+		prevMouseX = mouseX;
+		prevMouseY = mouseY;
+		mouseX = lerp(mouseX, targetMouseX, 0.08);
+		mouseY = lerp(mouseY, targetMouseY, 0.08);
+		mouseVelX = mouseX - prevMouseX;
+		mouseVelY = mouseY - prevMouseY;
+
+		const velInertia = 0.92;
+		const velResponse = 0.15;
+		smoothVelX = smoothVelX * velInertia + mouseVelX * velResponse;
+		smoothVelY = smoothVelY * velInertia + mouseVelY * velResponse;
+
+		const currentVelMagnitude = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
+		const targetVortexStrength = Math.min(currentVelMagnitude * 80, 2.5);
+		const vortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02;
+		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexInertia);
+
+		// Fade effect - draw semi-transparent quad over everything
+		// Very low alpha creates long-lasting trails
+		gl.useProgram(fadeProgram);
+		gl.bindBuffer(gl.ARRAY_BUFFER, fadeBuffer);
+		gl.enableVertexAttribArray(fadePositionLoc);
+		gl.vertexAttribPointer(fadePositionLoc, 2, gl.FLOAT, false, 0, 0);
+		gl.uniform4f(fadeColorLoc, 250/255, 247/255, 242/255, 0.012);
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+		// Update particles and build vertex data
+		let quadCount = 0;
+		const aspectRatio = width / height;
+
+		for (let i = 0; i < particles.length; i++) {
+			const p = particles[i];
+
+			p.prevX = p.x;
+			p.prevY = p.y;
+
+			const angle = getFlowAngle(p.x, p.y);
+			const speed = p.speed * 0.004;
+
+			p.x += Math.cos(angle) * speed;
+			p.y += Math.sin(angle) * speed;
+			p.life++;
+
+			if (p.x < -0.1 || p.x > 1.1 || p.y < -0.1 || p.y > 1.1 || p.life > p.maxLife) {
+				resetParticle(p);
+				continue;
+			}
+
+			const lifeRatio = p.life / p.maxLife;
+			const fadeIn = Math.min(p.life / 20, 1);
+			const fadeOut = 1 - lifeRatio * lifeRatio;
+			const alpha = fadeIn * fadeOut;
+
+			if (alpha > 0.01) {
+				// Proximity brightening
+				const dx = p.x - mouseX;
+				const dy = p.y - mouseY;
+				const dist = Math.sqrt(dx * dx + dy * dy);
+				const proximity = Math.exp(-dist * dist * 8);
+
+				const brighten = 1 + proximity * 0.3;
+				const finalAlpha = alpha * (0.7 + proximity * 0.3);
+
+				// Calculate perpendicular offset for quad thickness
+				const lineAngle = Math.atan2(p.y - p.prevY, p.x - p.prevX);
+				const perpX = Math.sin(lineAngle) * BASE_THICKNESS * (1 + proximity * 0.5);
+				const perpY = -Math.cos(lineAngle) * BASE_THICKNESS * (1 + proximity * 0.5) * aspectRatio;
+
+				// Build quad vertices (2 triangles)
+				const idx = quadCount * 12;
+				// Triangle 1
+				positionData[idx] = p.prevX - perpX;
+				positionData[idx + 1] = p.prevY - perpY;
+				positionData[idx + 2] = p.prevX + perpX;
+				positionData[idx + 3] = p.prevY + perpY;
+				positionData[idx + 4] = p.x + perpX;
+				positionData[idx + 5] = p.y + perpY;
+				// Triangle 2
+				positionData[idx + 6] = p.prevX - perpX;
+				positionData[idx + 7] = p.prevY - perpY;
+				positionData[idx + 8] = p.x + perpX;
+				positionData[idx + 9] = p.y + perpY;
+				positionData[idx + 10] = p.x - perpX;
+				positionData[idx + 11] = p.y - perpY;
+
+				const cidx = quadCount * 24;
+				const r = Math.min(p.r * brighten, 1);
+				const g = Math.min(p.g * brighten, 1);
+				const b = Math.min(p.b * brighten, 1);
+
+				// All 6 vertices get the same color
+				for (let v = 0; v < 6; v++) {
+					colorData[cidx + v * 4] = r;
+					colorData[cidx + v * 4 + 1] = g;
+					colorData[cidx + v * 4 + 2] = b;
+					colorData[cidx + v * 4 + 3] = finalAlpha;
+				}
+
+				quadCount++;
+			}
+		}
+
+		// Draw all quads in one batch
+		if (quadCount > 0) {
+			gl.useProgram(lineProgram);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, linePositionBuffer);
+			gl.bufferData(gl.ARRAY_BUFFER, positionData.subarray(0, quadCount * 12), gl.DYNAMIC_DRAW);
+			gl.enableVertexAttribArray(linePositionLoc);
+			gl.vertexAttribPointer(linePositionLoc, 2, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, lineColorBuffer);
+			gl.bufferData(gl.ARRAY_BUFFER, colorData.subarray(0, quadCount * 24), gl.DYNAMIC_DRAW);
+			gl.enableVertexAttribArray(lineColorLoc);
+			gl.vertexAttribPointer(lineColorLoc, 4, gl.FLOAT, false, 0, 0);
+
+			gl.drawArrays(gl.TRIANGLES, 0, quadCount * 6);
+		}
+
+		requestAnimationFrame(animate);
 	}
 
 	let animating = false;
@@ -247,8 +557,9 @@
 			if (!animating) {
 				animating = true;
 				initParticles();
-				ctx.fillStyle = colors.cream;
-				ctx.fillRect(0, 0, width, height);
+				// Clear to cream color
+				gl.clearColor(250/255, 247/255, 242/255, 1);
+				gl.clear(gl.COLOR_BUFFER_BIT);
 				animate();
 			}
 		});
@@ -260,150 +571,6 @@
 			targetMouseX = (e.clientX - rect.left) / width;
 			targetMouseY = (e.clientY - rect.top) / height;
 		});
-	}
-
-	function lerp(a: number, b: number, t: number): number {
-		return a + (b - a) * t;
-	}
-
-	function animate() {
-		time += 0.016;
-
-		// Track mouse velocity
-		prevMouseX = mouseX;
-		prevMouseY = mouseY;
-		mouseX = lerp(mouseX, targetMouseX, 0.08);
-		mouseY = lerp(mouseY, targetMouseY, 0.08);
-		mouseVelX = mouseX - prevMouseX;
-		mouseVelY = mouseY - prevMouseY;
-
-		// Smooth velocity with inertia - builds up and decays gradually
-		const velInertia = 0.92; // Higher = more inertia, slower decay
-		const velResponse = 0.15; // How quickly it responds to new velocity
-		smoothVelX = smoothVelX * velInertia + mouseVelX * velResponse;
-		smoothVelY = smoothVelY * velInertia + mouseVelY * velResponse;
-
-		// Smooth vortex strength based on mouse activity
-		const currentVelMagnitude = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
-		const targetVortexStrength = Math.min(currentVelMagnitude * 80, 2.5);
-		const vortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02; // Fast rise, slow decay
-		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexInertia);
-
-		// Fade effect - creates trails
-		ctx.fillStyle = 'rgba(250, 247, 242, 0.035)';
-		ctx.fillRect(0, 0, width, height);
-
-		// Update and draw particles
-		particles.forEach((p, i) => {
-			// Store previous position
-			p.prevX = p.x;
-			p.prevY = p.y;
-
-			// Get flow direction
-			const angle = getFlowAngle(p.x, p.y);
-			const speed = p.speed * 0.004;
-
-			// Update position
-			p.x += Math.cos(angle) * speed;
-			p.y += Math.sin(angle) * speed;
-
-			// Age particle
-			p.life++;
-
-			// Reset if out of bounds or too old
-			if (p.x < -0.1 || p.x > 1.1 || p.y < -0.1 || p.y > 1.1 || p.life > p.maxLife) {
-				// Respawn at edge or random position
-				if (Math.random() < 0.5) {
-					// Respawn at left edge for horizontal flow feel
-					p.x = -0.05;
-					p.y = Math.random();
-				} else {
-					p.x = Math.random();
-					p.y = Math.random() < 0.5 ? -0.05 : 1.05;
-				}
-				p.prevX = p.x;
-				p.prevY = p.y;
-				p.life = 0;
-				p.maxLife = 150 + Math.random() * 150;
-				p.colorType = Math.random() < 0.3 ? 1 : 0;
-				p.hueShift = (Math.random() - 0.5) * 2;
-				p.lightShift = (Math.random() - 0.5) * 2;
-			}
-
-			// Draw particle trail
-			const lifeRatio = p.life / p.maxLife;
-			const fadeIn = Math.min(p.life / 20, 1);
-			const fadeOut = 1 - Math.pow(lifeRatio, 2);
-			const alpha = fadeIn * fadeOut;
-
-			if (alpha > 0.01) {
-				ctx.beginPath();
-				ctx.moveTo(p.prevX * width, p.prevY * height);
-				ctx.lineTo(p.x * width, p.y * height);
-
-				// Proximity to mouse affects brightness
-				const dx = p.x - mouseX;
-				const dy = p.y - mouseY;
-				const dist = Math.sqrt(dx * dx + dy * dy);
-				const proximity = Math.exp(-dist * dist * 8);
-
-				let r: number, g: number, b: number;
-
-				if (p.colorType === 0) {
-					// Warm tones: orange to coral to terracotta (high chroma, lower brightness)
-					// Base hue around 15-25 (orange-red), with variation shifting toward coral or rust
-					const baseHue = 18 + p.hueShift * 12; // Range: 6-30
-					const sat = 0.75 + p.lightShift * 0.1; // High saturation: 0.65-0.85
-					const light = 0.38 + p.lightShift * 0.08 + proximity * 0.1; // Low-mid lightness: 0.30-0.46
-					[r, g, b] = hslToRgb(baseHue, sat, light);
-				} else {
-					// Cool accents: teal to slate blue (high chroma, lower brightness)
-					// Base hue around 190-210 (cyan-blue)
-					const baseHue = 195 + p.hueShift * 20; // Range: 175-215
-					const sat = 0.55 + p.lightShift * 0.15; // Medium-high saturation: 0.40-0.70
-					const light = 0.35 + p.lightShift * 0.08 + proximity * 0.08; // Lower lightness: 0.27-0.43
-					[r, g, b] = hslToRgb(baseHue, sat, light);
-				}
-
-				ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${alpha * (0.7 + proximity * 0.3)})`;
-				ctx.lineWidth = p.colorType === 0 ? 1.6 + proximity * 1.2 : 1.3 + proximity * 0.8;
-
-				ctx.lineCap = 'round';
-				ctx.stroke();
-			}
-		});
-
-		// Draw subtle flow field indicators (optional - for debugging feel)
-		// drawFlowField();
-
-		requestAnimationFrame(animate);
-	}
-
-	// Optional: visualize flow field
-	function drawFlowField() {
-		const gridSize = 60;
-		const cols = Math.ceil(width / gridSize);
-		const rows = Math.ceil(height / gridSize);
-
-		ctx.strokeStyle = 'rgba(217, 93, 57, 0.1)';
-		ctx.lineWidth = 1;
-
-		for (let i = 0; i < cols; i++) {
-			for (let j = 0; j < rows; j++) {
-				const x = (i + 0.5) / cols;
-				const y = (j + 0.5) / rows;
-				const angle = getFlowAngle(x, y);
-
-				const px = x * width;
-				const py = y * height;
-				const len = 15;
-
-				ctx.beginPath();
-				ctx.moveTo(px, py);
-				ctx.lineTo(px + Math.cos(angle) * len, py + Math.sin(angle) * len);
-				ctx.stroke();
-			}
-		}
 	}
 
 	if (document.readyState === 'loading') {
