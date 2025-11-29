@@ -27,17 +27,33 @@
 	const canvas = document.getElementById('hero-canvas') as HTMLCanvasElement;
 	const container = document.getElementById('hero-canvas-container')!;
 
-	// WebGL setup
-	const gl = canvas.getContext('webgl', {
+	// Background color values (cream)
+	const bgR = 250/255;
+	const bgG = 247/255;
+	const bgB = 242/255;
+
+	// WebGL2 setup (with fallback to WebGL1)
+	const glOptions = {
 		alpha: true,
 		premultipliedAlpha: false,
 		antialias: true,
 		preserveDrawingBuffer: true
-	})!;
+	};
+
+	let gl = canvas.getContext('webgl2', glOptions) as WebGLRenderingContext | null;
+	const isWebGL2 = !!gl;
+	if (!gl) {
+		gl = canvas.getContext('webgl', glOptions);
+	}
 
 	if (!gl) {
 		console.error('WebGL not supported');
 		throw new Error('WebGL not supported');
+	}
+
+	// Force sRGB color space on WebGL2 to prevent HDR boosting
+	if (isWebGL2 && 'drawingBufferColorSpace' in gl) {
+		(gl as any).drawingBufferColorSpace = 'srgb';
 	}
 
 	// Enable blending for transparency
@@ -181,8 +197,7 @@
 		maxLife: number;
 		speed: number;
 		colorType: number;
-		hueShift: number;
-		lightShift: number;
+		variation: number;
 		// Precomputed colors
 		r: number;
 		g: number;
@@ -262,41 +277,44 @@
 
 	const noise = new SimplexNoise(42);
 
-	// HSL to RGB
-	function hslToRgb(h: number, s: number, l: number): [number, number, number] {
-		const c = (1 - Math.abs(2 * l - 1)) * s;
-		const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-		const m = l - c / 2;
-		let r = 0, g = 0, b = 0;
+	// Predefined sRGB color palettes (hex converted to 0-1 floats)
+	// Warm grays - subtle warm tint
+	const WARM_GRAYS: [number, number, number][] = [
+		[0.675, 0.659, 0.643], // #ACA8A4
+		[0.710, 0.694, 0.678], // #B5B1AD
+		[0.745, 0.729, 0.714], // #BEBAB6
+		[0.780, 0.765, 0.749], // #C7C3BF
+		[0.816, 0.800, 0.784], // #D0CCC8
+	];
 
-		if (h < 60) { r = c; g = x; b = 0; }
-		else if (h < 120) { r = x; g = c; b = 0; }
-		else if (h < 180) { r = 0; g = c; b = x; }
-		else if (h < 240) { r = 0; g = x; b = c; }
-		else if (h < 300) { r = x; g = 0; b = c; }
-		else { r = c; g = 0; b = x; }
+	// Orange/coral accents
+	const ORANGES: [number, number, number][] = [
+		[0.698, 0.325, 0.200], // #B25333
+		[0.749, 0.373, 0.235], // #BF5F3C
+		[0.800, 0.420, 0.271], // #CC6B45
+		[0.851, 0.467, 0.306], // #D9774E
+		[0.902, 0.514, 0.341], // #E68357
+	];
 
-		return [r + m, g + m, b + m];
-	}
+	// Teal/blue accents
+	const TEALS: [number, number, number][] = [
+		[0.220, 0.420, 0.459], // #386B75
+		[0.255, 0.459, 0.498], // #41757F
+		[0.290, 0.498, 0.537], // #4A7F89
+		[0.325, 0.537, 0.576], // #538993
+		[0.361, 0.576, 0.616], // #5C939D
+	];
 
-	function computeParticleColor(colorType: number, hueShift: number, lightShift: number): [number, number, number] {
+	function computeParticleColor(colorType: number, variation: number): [number, number, number] {
+		// variation is 0-1, maps to palette index
+		const index = Math.min(Math.floor(variation * 5), 4);
+
 		if (colorType === 0) {
-			// Warm gray particles (majority)
-			const gray = 0.75 + lightShift * 0.08; // Range: 0.67-0.83
-			// Slight warm tint
-			return [gray, gray - 0.02, gray - 0.04];
+			return WARM_GRAYS[index];
 		} else if (colorType === 1) {
-			// Orange/coral particles
-			const baseHue = 18 + hueShift * 12;
-			const sat = 0.75 + lightShift * 0.1;
-			const light = 0.38 + lightShift * 0.08;
-			return hslToRgb(baseHue, sat, light);
+			return ORANGES[index];
 		} else {
-			// Teal/blue accent particles
-			const baseHue = 195 + hueShift * 20;
-			const sat = 0.55 + lightShift * 0.15;
-			const light = 0.35 + lightShift * 0.08;
-			return hslToRgb(baseHue, sat, light);
+			return TEALS[index];
 		}
 	}
 
@@ -306,9 +324,8 @@
 		// 70% gray, 20% orange, 10% teal
 		const rand = Math.random();
 		const colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
-		const hueShift = (Math.random() - 0.5) * 2;
-		const lightShift = (Math.random() - 0.5) * 2;
-		const [r, g, b] = computeParticleColor(colorType, hueShift, lightShift);
+		const variation = Math.random();
+		const [r, g, b] = computeParticleColor(colorType, variation);
 
 		return {
 			x, y,
@@ -318,8 +335,7 @@
 			maxLife: 150 + Math.random() * 150,
 			speed: 0.3 + Math.random() * 0.4,
 			colorType,
-			hueShift,
-			lightShift,
+			variation,
 			r, g, b
 		};
 	}
@@ -338,9 +354,8 @@
 		p.maxLife = 150 + Math.random() * 150;
 		const rand = Math.random();
 		p.colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
-		p.hueShift = (Math.random() - 0.5) * 2;
-		p.lightShift = (Math.random() - 0.5) * 2;
-		const [r, g, b] = computeParticleColor(p.colorType, p.hueShift, p.lightShift);
+		p.variation = Math.random();
+		const [r, g, b] = computeParticleColor(p.colorType, p.variation);
 		p.r = r;
 		p.g = g;
 		p.b = b;
@@ -444,14 +459,29 @@
 		const vortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02;
 		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexInertia);
 
-		// Fade effect - draw semi-transparent quad over everything
-		// Very low alpha creates long-lasting trails
+		// Fade effect: lerp toward background color
+		// newColor = oldColor * (1 - fadeAmount) + bgColor * fadeAmount
+		// Using multiply blend then additive to achieve this without alpha blending issues
+		const fadeAmount = 0.012;
+		const keepAmount = 1.0 - fadeAmount;
+
 		gl.useProgram(fadeProgram);
 		gl.bindBuffer(gl.ARRAY_BUFFER, fadeBuffer);
 		gl.enableVertexAttribArray(fadePositionLoc);
 		gl.vertexAttribPointer(fadePositionLoc, 2, gl.FLOAT, false, 0, 0);
-		gl.uniform4f(fadeColorLoc, 250/255, 247/255, 242/255, 0.012);
+
+		// First pass: multiply existing content by keepAmount
+		gl.blendFunc(gl.DST_COLOR, gl.ZERO);
+		gl.uniform4f(fadeColorLoc, keepAmount, keepAmount, keepAmount, 1.0);
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+		// Second pass: add background * fadeAmount
+		gl.blendFunc(gl.ONE, gl.ONE);
+		gl.uniform4f(fadeColorLoc, bgR * fadeAmount, bgG * fadeAmount, bgB * fadeAmount, 1.0);
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+		// Reset blend mode for particles
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
 		// Update particles and build vertex data
 		let quadCount = 0;
@@ -517,12 +547,18 @@
 				const g = Math.min(p.g * brighten, 1);
 				const b = Math.min(p.b * brighten, 1);
 
-				// All 6 vertices get the same color
+				// Blend with background in JS to avoid GPU alpha blending HDR issues
+				const invAlpha = 1.0 - finalAlpha;
+				const blendedR = r * finalAlpha + bgR * invAlpha;
+				const blendedG = g * finalAlpha + bgG * invAlpha;
+				const blendedB = b * finalAlpha + bgB * invAlpha;
+
+				// All 6 vertices get the same color (fully opaque, pre-blended)
 				for (let v = 0; v < 6; v++) {
-					colorData[cidx + v * 4] = r;
-					colorData[cidx + v * 4 + 1] = g;
-					colorData[cidx + v * 4 + 2] = b;
-					colorData[cidx + v * 4 + 3] = finalAlpha;
+					colorData[cidx + v * 4] = blendedR;
+					colorData[cidx + v * 4 + 1] = blendedG;
+					colorData[cidx + v * 4 + 2] = blendedB;
+					colorData[cidx + v * 4 + 3] = 1.0;
 				}
 
 				quadCount++;
@@ -558,7 +594,7 @@
 				animating = true;
 				initParticles();
 				// Clear to cream color
-				gl.clearColor(250/255, 247/255, 242/255, 1);
+				gl.clearColor(bgR, bgG, bgB, 1);
 				gl.clear(gl.COLOR_BUFFER_BIT);
 				animate();
 			}
