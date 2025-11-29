@@ -33,8 +33,8 @@
 	const bgB = 242/255;
 
 	// Particle system constants
-	const PARTICLE_COUNT = 1200;
-	const BASE_THICKNESS = 0.003;
+	const PARTICLE_COUNT = 672;
+	const BASE_THICKNESS = 0.00468;
 
 	// Shared state for mouse (used by both WebGPU and WebGL)
 	let width = 0;
@@ -268,9 +268,10 @@
 	}
 
 	function buildParticleData(positionData: Float32Array, colorData: Float32Array): number {
-		let quadCount = 0;
+		let vertexCount = 0;
 		const aspectRatio = width / height;
 		const dtScale = deltaTime * 60; // Normalize to 60fps
+		const CIRCLE_SEGMENTS = 8; // Number of triangles for circle
 
 		for (let i = 0; i < particles.length; i++) {
 			const p = particles[i];
@@ -302,25 +303,10 @@
 				const brighten = 1 + proximity * 0.3;
 				const finalAlpha = alpha * (0.7 + proximity * 0.3);
 
-				const lineAngle = Math.atan2(p.y - p.prevY, p.x - p.prevX);
-				const perpX = Math.sin(lineAngle) * BASE_THICKNESS * (1 + proximity * 0.5);
-				const perpY = -Math.cos(lineAngle) * BASE_THICKNESS * (1 + proximity * 0.5) * aspectRatio;
+				const thickness = BASE_THICKNESS * (1 + proximity * 0.5);
+				const thicknessY = thickness * aspectRatio;
 
-				const idx = quadCount * 12;
-				positionData[idx] = p.prevX - perpX;
-				positionData[idx + 1] = p.prevY - perpY;
-				positionData[idx + 2] = p.prevX + perpX;
-				positionData[idx + 3] = p.prevY + perpY;
-				positionData[idx + 4] = p.x + perpX;
-				positionData[idx + 5] = p.y + perpY;
-				positionData[idx + 6] = p.prevX - perpX;
-				positionData[idx + 7] = p.prevY - perpY;
-				positionData[idx + 8] = p.x + perpX;
-				positionData[idx + 9] = p.y + perpY;
-				positionData[idx + 10] = p.x - perpX;
-				positionData[idx + 11] = p.y - perpY;
-
-				const cidx = quadCount * 24;
+				// Calculate blended color
 				const r = Math.min(p.r * brighten, 1);
 				const g = Math.min(p.g * brighten, 1);
 				const b = Math.min(p.b * brighten, 1);
@@ -329,16 +315,35 @@
 				const blendedG = g * finalAlpha + bgG * invAlpha;
 				const blendedB = b * finalAlpha + bgB * invAlpha;
 
-				for (let v = 0; v < 6; v++) {
-					colorData[cidx + v * 4] = blendedR;
-					colorData[cidx + v * 4 + 1] = blendedG;
-					colorData[cidx + v * 4 + 2] = blendedB;
-					colorData[cidx + v * 4 + 3] = 1.0;
+				// Draw circle at current position - trail accumulation creates lines
+				const idx = vertexCount * 2;
+				const cidx = vertexCount * 4;
+				for (let seg = 0; seg < CIRCLE_SEGMENTS; seg++) {
+					const a1 = (seg / CIRCLE_SEGMENTS) * Math.PI * 2;
+					const a2 = ((seg + 1) / CIRCLE_SEGMENTS) * Math.PI * 2;
+
+					// Center vertex
+					positionData[idx + seg * 6] = p.x;
+					positionData[idx + seg * 6 + 1] = p.y;
+					// First edge vertex
+					positionData[idx + seg * 6 + 2] = p.x + Math.cos(a1) * thickness;
+					positionData[idx + seg * 6 + 3] = p.y + Math.sin(a1) * thicknessY;
+					// Second edge vertex
+					positionData[idx + seg * 6 + 4] = p.x + Math.cos(a2) * thickness;
+					positionData[idx + seg * 6 + 5] = p.y + Math.sin(a2) * thicknessY;
+
+					// Colors for triangle
+					for (let v = 0; v < 3; v++) {
+						colorData[cidx + seg * 12 + v * 4] = blendedR;
+						colorData[cidx + seg * 12 + v * 4 + 1] = blendedG;
+						colorData[cidx + seg * 12 + v * 4 + 2] = blendedB;
+						colorData[cidx + seg * 12 + v * 4 + 3] = 1.0;
+					}
 				}
-				quadCount++;
+				vertexCount += CIRCLE_SEGMENTS * 3;
 			}
 		}
-		return quadCount;
+		return vertexCount;
 	}
 
 	// ============================================================
@@ -544,15 +549,15 @@
 			entries: [{ binding: 0, resource: { buffer: fadeAddUniformBuffer } }],
 		});
 
-		const maxVertices = PARTICLE_COUNT * 6;
+		const maxVertices = PARTICLE_COUNT * 24; // 6 for quad + 18 for round cap (6 triangles)
 		const positionBuffer = device.createBuffer({ size: maxVertices * 8, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
 		const colorBuffer = device.createBuffer({ size: maxVertices * 16, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
 
 		const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
 
-		// Pre-allocated arrays
-		const positionData = new Float32Array(PARTICLE_COUNT * 12);
-		const colorData = new Float32Array(PARTICLE_COUNT * 24);
+		// Pre-allocated arrays (24 vertices per particle: 6 quad + 18 round cap)
+		const positionData = new Float32Array(PARTICLE_COUNT * 48);
+		const colorData = new Float32Array(PARTICLE_COUNT * 96);
 		const fadeMultiplyData = new Float32Array(4);
 		const fadeAddData = new Float32Array(4);
 
@@ -634,11 +639,11 @@
 			device.queue.writeBuffer(fadeAddUniformBuffer, 0, fadeAddData);
 
 			// Build particle data on CPU
-			const quadCount = buildParticleData(positionData, colorData);
+			const vertexCount = buildParticleData(positionData, colorData);
 
-			if (quadCount > 0) {
-				device.queue.writeBuffer(positionBuffer, 0, positionData.subarray(0, quadCount * 12));
-				device.queue.writeBuffer(colorBuffer, 0, colorData.subarray(0, quadCount * 24));
+			if (vertexCount > 0) {
+				device.queue.writeBuffer(positionBuffer, 0, positionData.subarray(0, vertexCount * 2));
+				device.queue.writeBuffer(colorBuffer, 0, colorData.subarray(0, vertexCount * 4));
 			}
 
 			const encoder = device.createCommandEncoder();
@@ -664,14 +669,14 @@
 			fadeAddPass.end();
 
 			// Draw particles
-			if (quadCount > 0) {
+			if (vertexCount > 0) {
 				const particlePass = encoder.beginRenderPass({
 					colorAttachments: [{ view: trailTextureView, loadOp: 'load', storeOp: 'store' }],
 				});
 				particlePass.setPipeline(linePipeline);
 				particlePass.setVertexBuffer(0, positionBuffer);
 				particlePass.setVertexBuffer(1, colorBuffer);
-				particlePass.draw(quadCount * 6);
+				particlePass.draw(vertexCount);
 				particlePass.end();
 			}
 
@@ -831,8 +836,8 @@
 			-1, 1, 1, -1, 1, 1
 		]), gl.STATIC_DRAW);
 
-		const positionData = new Float32Array(PARTICLE_COUNT * 12);
-		const colorData = new Float32Array(PARTICLE_COUNT * 24);
+		const positionData = new Float32Array(PARTICLE_COUNT * 48);
+		const colorData = new Float32Array(PARTICLE_COUNT * 96);
 
 		function resize() {
 			const rect = container.getBoundingClientRect();
@@ -882,22 +887,22 @@
 
 			gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA);
 
-			const quadCount = buildParticleData(positionData, colorData);
+			const vertexCount = buildParticleData(positionData, colorData);
 
-			if (quadCount > 0) {
+			if (vertexCount > 0) {
 				gl!.useProgram(lineProgram);
 
 				gl!.bindBuffer(gl!.ARRAY_BUFFER, linePositionBuffer);
-				gl!.bufferData(gl!.ARRAY_BUFFER, positionData.subarray(0, quadCount * 12), gl!.DYNAMIC_DRAW);
+				gl!.bufferData(gl!.ARRAY_BUFFER, positionData.subarray(0, vertexCount * 2), gl!.DYNAMIC_DRAW);
 				gl!.enableVertexAttribArray(linePositionLoc);
 				gl!.vertexAttribPointer(linePositionLoc, 2, gl!.FLOAT, false, 0, 0);
 
 				gl!.bindBuffer(gl!.ARRAY_BUFFER, lineColorBuffer);
-				gl!.bufferData(gl!.ARRAY_BUFFER, colorData.subarray(0, quadCount * 24), gl!.DYNAMIC_DRAW);
+				gl!.bufferData(gl!.ARRAY_BUFFER, colorData.subarray(0, vertexCount * 4), gl!.DYNAMIC_DRAW);
 				gl!.enableVertexAttribArray(lineColorLoc);
 				gl!.vertexAttribPointer(lineColorLoc, 4, gl!.FLOAT, false, 0, 0);
 
-				gl!.drawArrays(gl!.TRIANGLES, 0, quadCount * 6);
+				gl!.drawArrays(gl!.TRIANGLES, 0, vertexCount);
 			}
 
 			requestAnimationFrame(animate);
