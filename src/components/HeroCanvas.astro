@@ -1,5 +1,5 @@
 ---
-// Flow Field - WebGL particle system with cursor vortex
+// Flow Field - WebGPU compute shader particle system with cursor vortex (WebGL fallback)
 ---
 
 <div id="hero-canvas-container">
@@ -32,162 +32,52 @@
 	const bgG = 247/255;
 	const bgB = 242/255;
 
-	// WebGL2 setup (with fallback to WebGL1)
-	const glOptions = {
-		alpha: true,
-		premultipliedAlpha: false,
-		antialias: true,
-		preserveDrawingBuffer: true
-	};
-
-	let gl = canvas.getContext('webgl2', glOptions) as WebGLRenderingContext | null;
-	const isWebGL2 = !!gl;
-	if (!gl) {
-		gl = canvas.getContext('webgl', glOptions);
-	}
-
-	if (!gl) {
-		console.error('WebGL not supported');
-		throw new Error('WebGL not supported');
-	}
-
-	// Force sRGB color space on WebGL2 to prevent HDR boosting
-	if (isWebGL2 && 'drawingBufferColorSpace' in gl) {
-		(gl as any).drawingBufferColorSpace = 'srgb';
-	}
-
-	// Enable blending for transparency
-	gl.enable(gl.BLEND);
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-	// Shader sources
-	const vertexShaderSource = `
-		attribute vec2 a_position;
-		attribute vec2 a_prevPosition;
-		attribute vec4 a_color;
-		attribute float a_size;
-
-		varying vec4 v_color;
-
-		void main() {
-			gl_Position = vec4(a_position * 2.0 - 1.0, 0.0, 1.0);
-			gl_Position.y *= -1.0;
-			gl_PointSize = a_size;
-			v_color = a_color;
-		}
-	`;
-
-	const fragmentShaderSource = `
-		precision mediump float;
-		varying vec4 v_color;
-
-		void main() {
-			// Soft circular point
-			vec2 coord = gl_PointCoord - vec2(0.5);
-			float dist = length(coord);
-			float alpha = 1.0 - smoothstep(0.3, 0.5, dist);
-			gl_FragColor = vec4(v_color.rgb, v_color.a * alpha);
-		}
-	`;
-
-	// Line shaders for trails
-	const lineVertexShaderSource = `
-		attribute vec2 a_position;
-		attribute vec4 a_color;
-
-		varying vec4 v_color;
-
-		void main() {
-			gl_Position = vec4(a_position * 2.0 - 1.0, 0.0, 1.0);
-			gl_Position.y *= -1.0;
-			v_color = a_color;
-		}
-	`;
-
-	const lineFragmentShaderSource = `
-		precision mediump float;
-		varying vec4 v_color;
-
-		void main() {
-			gl_FragColor = v_color;
-		}
-	`;
-
-	// Fade shader for trail effect
-	const fadeVertexShaderSource = `
-		attribute vec2 a_position;
-
-		void main() {
-			gl_Position = vec4(a_position, 0.0, 1.0);
-		}
-	`;
-
-	const fadeFragmentShaderSource = `
-		precision mediump float;
-		uniform vec4 u_color;
-
-		void main() {
-			gl_FragColor = u_color;
-		}
-	`;
-
-	function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader {
-		const shader = gl.createShader(type)!;
-		gl.shaderSource(shader, source);
-		gl.compileShader(shader);
-		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-			console.error('Shader compile error:', gl.getShaderInfoLog(shader));
-			gl.deleteShader(shader);
-			throw new Error('Shader compilation failed');
-		}
-		return shader;
-	}
-
-	function createProgram(gl: WebGLRenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram {
-		const program = gl.createProgram()!;
-		gl.attachShader(program, vertexShader);
-		gl.attachShader(program, fragmentShader);
-		gl.linkProgram(program);
-		if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-			console.error('Program link error:', gl.getProgramInfoLog(program));
-			throw new Error('Program linking failed');
-		}
-		return program;
-	}
-
-	// Create shader programs
-	const lineProgram = createProgram(gl,
-		createShader(gl, gl.VERTEX_SHADER, lineVertexShaderSource),
-		createShader(gl, gl.FRAGMENT_SHADER, lineFragmentShaderSource)
-	);
-
-	const fadeProgram = createProgram(gl,
-		createShader(gl, gl.VERTEX_SHADER, fadeVertexShaderSource),
-		createShader(gl, gl.FRAGMENT_SHADER, fadeFragmentShaderSource)
-	);
-
-	// Get attribute and uniform locations
-	const linePositionLoc = gl.getAttribLocation(lineProgram, 'a_position');
-	const lineColorLoc = gl.getAttribLocation(lineProgram, 'a_color');
-
-	const fadePositionLoc = gl.getAttribLocation(fadeProgram, 'a_position');
-	const fadeColorLoc = gl.getUniformLocation(fadeProgram, 'u_color');
-
-	// Create buffers
-	const linePositionBuffer = gl.createBuffer()!;
-	const lineColorBuffer = gl.createBuffer()!;
-
-	// Fullscreen quad for fade effect
-	const fadeBuffer = gl.createBuffer()!;
-	gl.bindBuffer(gl.ARRAY_BUFFER, fadeBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-		-1, -1, 1, -1, -1, 1,
-		-1, 1, 1, -1, 1, 1
-	]), gl.STATIC_DRAW);
-
-	// Particle system
+	// Particle system constants
 	const PARTICLE_COUNT = 1200;
+	const BASE_THICKNESS = 0.003;
 
+	// Shared state for mouse (used by both WebGPU and WebGL)
+	let width = 0;
+	let height = 0;
+	let mouseX = 0.5;
+	let mouseY = 0.5;
+	let targetMouseX = 0.5;
+	let targetMouseY = 0.5;
+	let prevMouseX = 0.5;
+	let prevMouseY = 0.5;
+	let mouseVelX = 0;
+	let mouseVelY = 0;
+	let smoothVelX = 0;
+	let smoothVelY = 0;
+	let vortexStrengthCurrent = 0;
+	let time = 0;
+
+	function lerp(a: number, b: number, t: number): number {
+		return a + (b - a) * t;
+	}
+
+	function updateMouseState() {
+		prevMouseX = mouseX;
+		prevMouseY = mouseY;
+		mouseX = lerp(mouseX, targetMouseX, 0.08);
+		mouseY = lerp(mouseY, targetMouseY, 0.08);
+		mouseVelX = mouseX - prevMouseX;
+		mouseVelY = mouseY - prevMouseY;
+
+		const velInertia = 0.92;
+		const velResponse = 0.15;
+		smoothVelX = smoothVelX * velInertia + mouseVelX * velResponse;
+		smoothVelY = smoothVelY * velInertia + mouseVelY * velResponse;
+
+		const currentVelMagnitude = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
+		const targetVortexStrength = Math.min(currentVelMagnitude * 80, 2.5);
+		const vortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02;
+		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexInertia);
+	}
+
+	// ============================================================
+	// WebGL Fallback - CPU Particle System
+	// ============================================================
 	interface Particle {
 		x: number;
 		y: number;
@@ -196,9 +86,6 @@
 		life: number;
 		maxLife: number;
 		speed: number;
-		colorType: number;
-		variation: number;
-		// Precomputed colors
 		r: number;
 		g: number;
 		b: number;
@@ -206,7 +93,7 @@
 
 	const particles: Particle[] = [];
 
-	// Simplex noise
+	// Simplex noise for WebGL fallback
 	class SimplexNoise {
 		private perm: number[] = [];
 		private grad3 = [
@@ -277,115 +164,25 @@
 
 	const noise = new SimplexNoise(42);
 
-	// Predefined sRGB color palettes (hex converted to 0-1 floats)
-	// Warm grays - subtle warm tint
+	// Color palettes for WebGL fallback
 	const WARM_GRAYS: [number, number, number][] = [
-		[0.675, 0.659, 0.643], // #ACA8A4
-		[0.710, 0.694, 0.678], // #B5B1AD
-		[0.745, 0.729, 0.714], // #BEBAB6
-		[0.780, 0.765, 0.749], // #C7C3BF
-		[0.816, 0.800, 0.784], // #D0CCC8
+		[0.675, 0.659, 0.643], [0.710, 0.694, 0.678], [0.745, 0.729, 0.714],
+		[0.780, 0.765, 0.749], [0.816, 0.800, 0.784],
 	];
-
-	// Orange/coral accents
 	const ORANGES: [number, number, number][] = [
-		[0.698, 0.325, 0.200], // #B25333
-		[0.749, 0.373, 0.235], // #BF5F3C
-		[0.800, 0.420, 0.271], // #CC6B45
-		[0.851, 0.467, 0.306], // #D9774E
-		[0.902, 0.514, 0.341], // #E68357
+		[0.698, 0.325, 0.200], [0.749, 0.373, 0.235], [0.800, 0.420, 0.271],
+		[0.851, 0.467, 0.306], [0.902, 0.514, 0.341],
 	];
-
-	// Teal/blue accents
 	const TEALS: [number, number, number][] = [
-		[0.220, 0.420, 0.459], // #386B75
-		[0.255, 0.459, 0.498], // #41757F
-		[0.290, 0.498, 0.537], // #4A7F89
-		[0.325, 0.537, 0.576], // #538993
-		[0.361, 0.576, 0.616], // #5C939D
+		[0.220, 0.420, 0.459], [0.255, 0.459, 0.498], [0.290, 0.498, 0.537],
+		[0.325, 0.537, 0.576], [0.361, 0.576, 0.616],
 	];
 
 	function computeParticleColor(colorType: number, variation: number): [number, number, number] {
-		// variation is 0-1, maps to palette index
 		const index = Math.min(Math.floor(variation * 5), 4);
-
-		if (colorType === 0) {
-			return WARM_GRAYS[index];
-		} else if (colorType === 1) {
-			return ORANGES[index];
-		} else {
-			return TEALS[index];
-		}
-	}
-
-	function createParticle(): Particle {
-		const x = Math.random();
-		const y = Math.random();
-		// 70% gray, 20% orange, 10% teal
-		const rand = Math.random();
-		const colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
-		const variation = Math.random();
-		const [r, g, b] = computeParticleColor(colorType, variation);
-
-		return {
-			x, y,
-			prevX: x,
-			prevY: y,
-			life: Math.random() * 200,
-			maxLife: 150 + Math.random() * 150,
-			speed: 0.3 + Math.random() * 0.4,
-			colorType,
-			variation,
-			r, g, b
-		};
-	}
-
-	function resetParticle(p: Particle) {
-		if (Math.random() < 0.5) {
-			p.x = -0.05;
-			p.y = Math.random();
-		} else {
-			p.x = Math.random();
-			p.y = Math.random() < 0.5 ? -0.05 : 1.05;
-		}
-		p.prevX = p.x;
-		p.prevY = p.y;
-		p.life = 0;
-		p.maxLife = 150 + Math.random() * 150;
-		const rand = Math.random();
-		p.colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
-		p.variation = Math.random();
-		const [r, g, b] = computeParticleColor(p.colorType, p.variation);
-		p.r = r;
-		p.g = g;
-		p.b = b;
-	}
-
-	function initParticles() {
-		particles.length = 0;
-		for (let i = 0; i < PARTICLE_COUNT; i++) {
-			particles.push(createParticle());
-		}
-	}
-
-	// Mouse state
-	let width = 0;
-	let height = 0;
-	let mouseX = 0.5;
-	let mouseY = 0.5;
-	let targetMouseX = 0.5;
-	let targetMouseY = 0.5;
-	let prevMouseX = 0.5;
-	let prevMouseY = 0.5;
-	let mouseVelX = 0;
-	let mouseVelY = 0;
-	let smoothVelX = 0;
-	let smoothVelY = 0;
-	let vortexStrengthCurrent = 0;
-	let time = 0;
-
-	function lerp(a: number, b: number, t: number): number {
-		return a + (b - a) * t;
+		if (colorType === 0) return WARM_GRAYS[index];
+		if (colorType === 1) return ORANGES[index];
+		return TEALS[index];
 	}
 
 	function lerpAngle(a: number, b: number, t: number): number {
@@ -420,82 +217,60 @@
 		return finalAngle;
 	}
 
-	function resize() {
-		const rect = container.getBoundingClientRect();
-		width = rect.width;
-		height = rect.height;
+	function createParticle(): Particle {
+		const x = Math.random();
+		const y = Math.random();
+		const rand = Math.random();
+		const colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
+		const variation = Math.random();
+		const [r, g, b] = computeParticleColor(colorType, variation);
 
-		const dpr = Math.min(window.devicePixelRatio || 1, 2);
-		canvas.width = width * dpr;
-		canvas.height = height * dpr;
-		gl.viewport(0, 0, canvas.width, canvas.height);
+		return {
+			x, y, prevX: x, prevY: y,
+			life: Math.random() * 200,
+			maxLife: 150 + Math.random() * 150,
+			speed: 0.3 + Math.random() * 0.4,
+			r, g, b
+		};
 	}
 
-	// Typed arrays for batch rendering - 6 vertices per quad (2 triangles), 2 coords each
-	let positionData = new Float32Array(PARTICLE_COUNT * 12);
-	let colorData = new Float32Array(PARTICLE_COUNT * 24); // 6 vertices, 4 color components each
+	function resetParticle(p: Particle) {
+		if (Math.random() < 0.5) {
+			p.x = -0.05;
+			p.y = Math.random();
+		} else {
+			p.x = Math.random();
+			p.y = Math.random() < 0.5 ? -0.05 : 1.05;
+		}
+		p.prevX = p.x;
+		p.prevY = p.y;
+		p.life = 0;
+		p.maxLife = 150 + Math.random() * 150;
+		const rand = Math.random();
+		const colorType = rand < 0.7 ? 0 : (rand < 0.9 ? 1 : 2);
+		const variation = Math.random();
+		const [r, g, b] = computeParticleColor(colorType, variation);
+		p.r = r; p.g = g; p.b = b;
+	}
 
-	// Line thickness in normalized coordinates (adjusted for aspect ratio in render)
-	const BASE_THICKNESS = 0.003;
+	function initParticles() {
+		particles.length = 0;
+		for (let i = 0; i < PARTICLE_COUNT; i++) {
+			particles.push(createParticle());
+		}
+	}
 
-	function animate() {
-		time += 0.016;
-
-		// Update mouse with inertia
-		prevMouseX = mouseX;
-		prevMouseY = mouseY;
-		mouseX = lerp(mouseX, targetMouseX, 0.08);
-		mouseY = lerp(mouseY, targetMouseY, 0.08);
-		mouseVelX = mouseX - prevMouseX;
-		mouseVelY = mouseY - prevMouseY;
-
-		const velInertia = 0.92;
-		const velResponse = 0.15;
-		smoothVelX = smoothVelX * velInertia + mouseVelX * velResponse;
-		smoothVelY = smoothVelY * velInertia + mouseVelY * velResponse;
-
-		const currentVelMagnitude = Math.sqrt(mouseVelX * mouseVelX + mouseVelY * mouseVelY);
-		const targetVortexStrength = Math.min(currentVelMagnitude * 80, 2.5);
-		const vortexInertia = currentVelMagnitude > 0.001 ? 0.08 : 0.02;
-		vortexStrengthCurrent = lerp(vortexStrengthCurrent, targetVortexStrength, vortexInertia);
-
-		// Fade effect: lerp toward background color
-		// newColor = oldColor * (1 - fadeAmount) + bgColor * fadeAmount
-		// Using multiply blend then additive to achieve this without alpha blending issues
-		const fadeAmount = 0.012;
-		const keepAmount = 1.0 - fadeAmount;
-
-		gl.useProgram(fadeProgram);
-		gl.bindBuffer(gl.ARRAY_BUFFER, fadeBuffer);
-		gl.enableVertexAttribArray(fadePositionLoc);
-		gl.vertexAttribPointer(fadePositionLoc, 2, gl.FLOAT, false, 0, 0);
-
-		// First pass: multiply existing content by keepAmount
-		gl.blendFunc(gl.DST_COLOR, gl.ZERO);
-		gl.uniform4f(fadeColorLoc, keepAmount, keepAmount, keepAmount, 1.0);
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-		// Second pass: add background * fadeAmount
-		gl.blendFunc(gl.ONE, gl.ONE);
-		gl.uniform4f(fadeColorLoc, bgR * fadeAmount, bgG * fadeAmount, bgB * fadeAmount, 1.0);
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-		// Reset blend mode for particles
-		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-
-		// Update particles and build vertex data
+	function buildParticleData(positionData: Float32Array, colorData: Float32Array): number {
 		let quadCount = 0;
 		const aspectRatio = width / height;
 
 		for (let i = 0; i < particles.length; i++) {
 			const p = particles[i];
-
 			p.prevX = p.x;
 			p.prevY = p.y;
 
 			const angle = getFlowAngle(p.x, p.y);
 			const speed = p.speed * 0.004;
-
 			p.x += Math.cos(angle) * speed;
 			p.y += Math.sin(angle) * speed;
 			p.life++;
@@ -511,7 +286,6 @@
 			const alpha = fadeIn * fadeOut;
 
 			if (alpha > 0.01) {
-				// Proximity brightening
 				const dx = p.x - mouseX;
 				const dy = p.y - mouseY;
 				const dist = Math.sqrt(dx * dx + dy * dy);
@@ -520,21 +294,17 @@
 				const brighten = 1 + proximity * 0.3;
 				const finalAlpha = alpha * (0.7 + proximity * 0.3);
 
-				// Calculate perpendicular offset for quad thickness
 				const lineAngle = Math.atan2(p.y - p.prevY, p.x - p.prevX);
 				const perpX = Math.sin(lineAngle) * BASE_THICKNESS * (1 + proximity * 0.5);
 				const perpY = -Math.cos(lineAngle) * BASE_THICKNESS * (1 + proximity * 0.5) * aspectRatio;
 
-				// Build quad vertices (2 triangles)
 				const idx = quadCount * 12;
-				// Triangle 1
 				positionData[idx] = p.prevX - perpX;
 				positionData[idx + 1] = p.prevY - perpY;
 				positionData[idx + 2] = p.prevX + perpX;
 				positionData[idx + 3] = p.prevY + perpY;
 				positionData[idx + 4] = p.x + perpX;
 				positionData[idx + 5] = p.y + perpY;
-				// Triangle 2
 				positionData[idx + 6] = p.prevX - perpX;
 				positionData[idx + 7] = p.prevY - perpY;
 				positionData[idx + 8] = p.x + perpX;
@@ -546,57 +316,572 @@
 				const r = Math.min(p.r * brighten, 1);
 				const g = Math.min(p.g * brighten, 1);
 				const b = Math.min(p.b * brighten, 1);
-
-				// Blend with background in JS to avoid GPU alpha blending HDR issues
 				const invAlpha = 1.0 - finalAlpha;
 				const blendedR = r * finalAlpha + bgR * invAlpha;
 				const blendedG = g * finalAlpha + bgG * invAlpha;
 				const blendedB = b * finalAlpha + bgB * invAlpha;
 
-				// All 6 vertices get the same color (fully opaque, pre-blended)
 				for (let v = 0; v < 6; v++) {
 					colorData[cidx + v * 4] = blendedR;
 					colorData[cidx + v * 4 + 1] = blendedG;
 					colorData[cidx + v * 4 + 2] = blendedB;
 					colorData[cidx + v * 4 + 3] = 1.0;
 				}
-
 				quadCount++;
 			}
 		}
-
-		// Draw all quads in one batch
-		if (quadCount > 0) {
-			gl.useProgram(lineProgram);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, linePositionBuffer);
-			gl.bufferData(gl.ARRAY_BUFFER, positionData.subarray(0, quadCount * 12), gl.DYNAMIC_DRAW);
-			gl.enableVertexAttribArray(linePositionLoc);
-			gl.vertexAttribPointer(linePositionLoc, 2, gl.FLOAT, false, 0, 0);
-
-			gl.bindBuffer(gl.ARRAY_BUFFER, lineColorBuffer);
-			gl.bufferData(gl.ARRAY_BUFFER, colorData.subarray(0, quadCount * 24), gl.DYNAMIC_DRAW);
-			gl.enableVertexAttribArray(lineColorLoc);
-			gl.vertexAttribPointer(lineColorLoc, 4, gl.FLOAT, false, 0, 0);
-
-			gl.drawArrays(gl.TRIANGLES, 0, quadCount * 6);
-		}
-
-		requestAnimationFrame(animate);
+		return quadCount;
 	}
 
-	let animating = false;
+	// ============================================================
+	// WebGPU Implementation (CPU particle sim, GPU rendering)
+	// ============================================================
+	async function initWebGPU(): Promise<boolean> {
+		if (!navigator.gpu) {
+			console.log('WebGPU not supported, falling back to WebGL');
+			return false;
+		}
 
-	function init() {
+		const adapter = await navigator.gpu.requestAdapter();
+		if (!adapter) {
+			console.log('No WebGPU adapter found, falling back to WebGL');
+			return false;
+		}
+
+		const device = await adapter.requestDevice();
+		const context = canvas.getContext('webgpu');
+		if (!context) {
+			console.log('Could not get WebGPU context, falling back to WebGL');
+			return false;
+		}
+
+		const format = navigator.gpu.getPreferredCanvasFormat();
+		context.configure({
+			device,
+			format,
+			alphaMode: 'opaque',
+		});
+
+		// Shaders
+		const lineShaderModule = device.createShaderModule({
+			label: 'Line Shader',
+			code: `
+				struct VertexOutput {
+					@builtin(position) position: vec4f,
+					@location(0) color: vec4f,
+				}
+
+				@vertex
+				fn vertexMain(
+					@location(0) pos: vec2f,
+					@location(1) color: vec4f
+				) -> VertexOutput {
+					var output: VertexOutput;
+					output.position = vec4f(pos * 2.0 - 1.0, 0.0, 1.0);
+					output.position.y *= -1.0;
+					output.color = color;
+					return output;
+				}
+
+				@fragment
+				fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
+					return input.color;
+				}
+			`
+		});
+
+		const fadeShaderModule = device.createShaderModule({
+			label: 'Fade Shader',
+			code: `
+				struct Uniforms { color: vec4f }
+				@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+
+				@vertex
+				fn vertexMain(@location(0) pos: vec2f) -> @builtin(position) vec4f {
+					return vec4f(pos, 0.0, 1.0);
+				}
+
+				@fragment
+				fn fragmentMain() -> @location(0) vec4f {
+					return uniforms.color;
+				}
+			`
+		});
+
+		const blitShaderModule = device.createShaderModule({
+			label: 'Blit Shader',
+			code: `
+				@group(0) @binding(0) var texSampler: sampler;
+				@group(0) @binding(1) var tex: texture_2d<f32>;
+
+				struct VertexOutput {
+					@builtin(position) position: vec4f,
+					@location(0) uv: vec2f,
+				}
+
+				@vertex
+				fn vertexMain(@location(0) pos: vec2f) -> VertexOutput {
+					var output: VertexOutput;
+					output.position = vec4f(pos, 0.0, 1.0);
+					output.uv = (pos + 1.0) * 0.5;
+					output.uv.y = 1.0 - output.uv.y;
+					return output;
+				}
+
+				@fragment
+				fn fragmentMain(input: VertexOutput) -> @location(0) vec4f {
+					return textureSample(tex, texSampler, input.uv);
+				}
+			`
+		});
+
+		// Pipelines
+		const linePipeline = device.createRenderPipeline({
+			label: 'Line Pipeline',
+			layout: 'auto',
+			vertex: {
+				module: lineShaderModule,
+				entryPoint: 'vertexMain',
+				buffers: [
+					{ arrayStride: 8, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] },
+					{ arrayStride: 16, attributes: [{ shaderLocation: 1, offset: 0, format: 'float32x4' }] },
+				],
+			},
+			fragment: {
+				module: lineShaderModule,
+				entryPoint: 'fragmentMain',
+				targets: [{ format }],
+			},
+			primitive: { topology: 'triangle-list' },
+		});
+
+		const fadeMultiplyPipeline = device.createRenderPipeline({
+			label: 'Fade Multiply Pipeline',
+			layout: 'auto',
+			vertex: {
+				module: fadeShaderModule,
+				entryPoint: 'vertexMain',
+				buffers: [{ arrayStride: 8, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] }],
+			},
+			fragment: {
+				module: fadeShaderModule,
+				entryPoint: 'fragmentMain',
+				targets: [{
+					format,
+					blend: {
+						color: { srcFactor: 'dst', dstFactor: 'zero', operation: 'add' },
+						alpha: { srcFactor: 'one', dstFactor: 'zero', operation: 'add' },
+					},
+				}],
+			},
+			primitive: { topology: 'triangle-list' },
+		});
+
+		const fadeAddPipeline = device.createRenderPipeline({
+			label: 'Fade Add Pipeline',
+			layout: 'auto',
+			vertex: {
+				module: fadeShaderModule,
+				entryPoint: 'vertexMain',
+				buffers: [{ arrayStride: 8, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] }],
+			},
+			fragment: {
+				module: fadeShaderModule,
+				entryPoint: 'fragmentMain',
+				targets: [{
+					format,
+					blend: {
+						color: { srcFactor: 'one', dstFactor: 'one', operation: 'add' },
+						alpha: { srcFactor: 'one', dstFactor: 'zero', operation: 'add' },
+					},
+				}],
+			},
+			primitive: { topology: 'triangle-list' },
+		});
+
+		const blitPipeline = device.createRenderPipeline({
+			label: 'Blit Pipeline',
+			layout: 'auto',
+			vertex: {
+				module: blitShaderModule,
+				entryPoint: 'vertexMain',
+				buffers: [{ arrayStride: 8, attributes: [{ shaderLocation: 0, offset: 0, format: 'float32x2' }] }],
+			},
+			fragment: {
+				module: blitShaderModule,
+				entryPoint: 'fragmentMain',
+				targets: [{ format }],
+			},
+			primitive: { topology: 'triangle-list' },
+		});
+
+		// Buffers
+		const quadVertices = new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]);
+		const quadBuffer = device.createBuffer({
+			size: quadVertices.byteLength,
+			usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+		});
+		device.queue.writeBuffer(quadBuffer, 0, quadVertices);
+
+		const fadeMultiplyUniformBuffer = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+		const fadeAddUniformBuffer = device.createBuffer({ size: 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+
+		const fadeMultiplyBindGroup = device.createBindGroup({
+			layout: fadeMultiplyPipeline.getBindGroupLayout(0),
+			entries: [{ binding: 0, resource: { buffer: fadeMultiplyUniformBuffer } }],
+		});
+
+		const fadeAddBindGroup = device.createBindGroup({
+			layout: fadeAddPipeline.getBindGroupLayout(0),
+			entries: [{ binding: 0, resource: { buffer: fadeAddUniformBuffer } }],
+		});
+
+		const maxVertices = PARTICLE_COUNT * 6;
+		const positionBuffer = device.createBuffer({ size: maxVertices * 8, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+		const colorBuffer = device.createBuffer({ size: maxVertices * 16, usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST });
+
+		const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
+
+		// Pre-allocated arrays
+		const positionData = new Float32Array(PARTICLE_COUNT * 12);
+		const colorData = new Float32Array(PARTICLE_COUNT * 24);
+		const fadeMultiplyData = new Float32Array(4);
+		const fadeAddData = new Float32Array(4);
+
+		let trailTexture: GPUTexture;
+		let trailTextureView: GPUTextureView;
+		let blitBindGroup: GPUBindGroup;
+
+		function createTrailTexture() {
+			if (trailTexture) trailTexture.destroy();
+			trailTexture = device.createTexture({
+				size: [canvas.width, canvas.height],
+				format,
+				usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING,
+			});
+			trailTextureView = trailTexture.createView();
+		}
+
+		function resize() {
+			const rect = container.getBoundingClientRect();
+			width = rect.width;
+			height = rect.height;
+
+			const dpr = Math.min(window.devicePixelRatio || 1, 2);
+			canvas.width = width * dpr;
+			canvas.height = height * dpr;
+
+			createTrailTexture();
+
+			blitBindGroup = device.createBindGroup({
+				layout: blitPipeline.getBindGroupLayout(0),
+				entries: [
+					{ binding: 0, resource: sampler },
+					{ binding: 1, resource: trailTextureView },
+				],
+			});
+
+			const encoder = device.createCommandEncoder();
+			const pass = encoder.beginRenderPass({
+				colorAttachments: [{
+					view: trailTextureView,
+					clearValue: { r: bgR, g: bgG, b: bgB, a: 1 },
+					loadOp: 'clear',
+					storeOp: 'store',
+				}],
+			});
+			pass.end();
+			device.queue.submit([encoder.finish()]);
+		}
+
+		function animate() {
+			time += 0.016;
+			updateMouseState();
+
+			const fadeAmount = 0.012;
+			const keepAmount = 1.0 - fadeAmount;
+
+			fadeMultiplyData[0] = keepAmount;
+			fadeMultiplyData[1] = keepAmount;
+			fadeMultiplyData[2] = keepAmount;
+			fadeMultiplyData[3] = 1.0;
+			device.queue.writeBuffer(fadeMultiplyUniformBuffer, 0, fadeMultiplyData);
+
+			fadeAddData[0] = bgR * fadeAmount;
+			fadeAddData[1] = bgG * fadeAmount;
+			fadeAddData[2] = bgB * fadeAmount;
+			fadeAddData[3] = 1.0;
+			device.queue.writeBuffer(fadeAddUniformBuffer, 0, fadeAddData);
+
+			// Build particle data on CPU
+			const quadCount = buildParticleData(positionData, colorData);
+
+			if (quadCount > 0) {
+				device.queue.writeBuffer(positionBuffer, 0, positionData.subarray(0, quadCount * 12));
+				device.queue.writeBuffer(colorBuffer, 0, colorData.subarray(0, quadCount * 24));
+			}
+
+			const encoder = device.createCommandEncoder();
+
+			// Fade multiply
+			const fadeMultiplyPass = encoder.beginRenderPass({
+				colorAttachments: [{ view: trailTextureView, loadOp: 'load', storeOp: 'store' }],
+			});
+			fadeMultiplyPass.setPipeline(fadeMultiplyPipeline);
+			fadeMultiplyPass.setVertexBuffer(0, quadBuffer);
+			fadeMultiplyPass.setBindGroup(0, fadeMultiplyBindGroup);
+			fadeMultiplyPass.draw(6);
+			fadeMultiplyPass.end();
+
+			// Fade add
+			const fadeAddPass = encoder.beginRenderPass({
+				colorAttachments: [{ view: trailTextureView, loadOp: 'load', storeOp: 'store' }],
+			});
+			fadeAddPass.setPipeline(fadeAddPipeline);
+			fadeAddPass.setVertexBuffer(0, quadBuffer);
+			fadeAddPass.setBindGroup(0, fadeAddBindGroup);
+			fadeAddPass.draw(6);
+			fadeAddPass.end();
+
+			// Draw particles
+			if (quadCount > 0) {
+				const particlePass = encoder.beginRenderPass({
+					colorAttachments: [{ view: trailTextureView, loadOp: 'load', storeOp: 'store' }],
+				});
+				particlePass.setPipeline(linePipeline);
+				particlePass.setVertexBuffer(0, positionBuffer);
+				particlePass.setVertexBuffer(1, colorBuffer);
+				particlePass.draw(quadCount * 6);
+				particlePass.end();
+			}
+
+			// Blit to screen
+			const screenTexture = context.getCurrentTexture();
+			const blitPass = encoder.beginRenderPass({
+				colorAttachments: [{
+					view: screenTexture.createView(),
+					clearValue: { r: bgR, g: bgG, b: bgB, a: 1 },
+					loadOp: 'clear',
+					storeOp: 'store',
+				}],
+			});
+			blitPass.setPipeline(blitPipeline);
+			blitPass.setVertexBuffer(0, quadBuffer);
+			blitPass.setBindGroup(0, blitBindGroup);
+			blitPass.draw(6);
+			blitPass.end();
+
+			device.queue.submit([encoder.finish()]);
+			requestAnimationFrame(animate);
+		}
+
+		const resizeObserver = new ResizeObserver(() => resize());
+		resizeObserver.observe(container);
+
+		document.addEventListener('mousemove', (e) => {
+			const rect = container.getBoundingClientRect();
+			targetMouseX = (e.clientX - rect.left) / width;
+			targetMouseY = (e.clientY - rect.top) / height;
+		});
+
+		let started = false;
+		const startObserver = new ResizeObserver(() => {
+			if (!started) {
+				started = true;
+				initParticles();
+				resize();
+				animate();
+				console.log('🚀 WebGPU renderer active');
+			}
+		});
+		startObserver.observe(container);
+
+		return true;
+	}
+
+	// ============================================================
+	// WebGL Fallback Implementation
+	// ============================================================
+	function initWebGL() {
+		const glOptions = {
+			alpha: true,
+			premultipliedAlpha: false,
+			antialias: true,
+			preserveDrawingBuffer: true
+		};
+
+		let gl = canvas.getContext('webgl2', glOptions) as WebGLRenderingContext | null;
+		const isWebGL2 = !!gl;
+		if (!gl) {
+			gl = canvas.getContext('webgl', glOptions);
+		}
+
+		if (!gl) {
+			console.error('WebGL not supported');
+			return;
+		}
+
+		if (isWebGL2 && 'drawingBufferColorSpace' in gl) {
+			(gl as any).drawingBufferColorSpace = 'srgb';
+		}
+
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+		const lineVertexShaderSource = `
+			attribute vec2 a_position;
+			attribute vec4 a_color;
+			varying vec4 v_color;
+			void main() {
+				gl_Position = vec4(a_position * 2.0 - 1.0, 0.0, 1.0);
+				gl_Position.y *= -1.0;
+				v_color = a_color;
+			}
+		`;
+
+		const lineFragmentShaderSource = `
+			precision mediump float;
+			varying vec4 v_color;
+			void main() {
+				gl_FragColor = v_color;
+			}
+		`;
+
+		const fadeVertexShaderSource = `
+			attribute vec2 a_position;
+			void main() {
+				gl_Position = vec4(a_position, 0.0, 1.0);
+			}
+		`;
+
+		const fadeFragmentShaderSource = `
+			precision mediump float;
+			uniform vec4 u_color;
+			void main() {
+				gl_FragColor = u_color;
+			}
+		`;
+
+		function createShader(type: number, source: string): WebGLShader {
+			const shader = gl!.createShader(type)!;
+			gl!.shaderSource(shader, source);
+			gl!.compileShader(shader);
+			if (!gl!.getShaderParameter(shader, gl!.COMPILE_STATUS)) {
+				console.error('Shader compile error:', gl!.getShaderInfoLog(shader));
+				gl!.deleteShader(shader);
+				throw new Error('Shader compilation failed');
+			}
+			return shader;
+		}
+
+		function createProgram(vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram {
+			const program = gl!.createProgram()!;
+			gl!.attachShader(program, vertexShader);
+			gl!.attachShader(program, fragmentShader);
+			gl!.linkProgram(program);
+			if (!gl!.getProgramParameter(program, gl!.LINK_STATUS)) {
+				console.error('Program link error:', gl!.getProgramInfoLog(program));
+				throw new Error('Program linking failed');
+			}
+			return program;
+		}
+
+		const lineProgram = createProgram(
+			createShader(gl.VERTEX_SHADER, lineVertexShaderSource),
+			createShader(gl.FRAGMENT_SHADER, lineFragmentShaderSource)
+		);
+
+		const fadeProgram = createProgram(
+			createShader(gl.VERTEX_SHADER, fadeVertexShaderSource),
+			createShader(gl.FRAGMENT_SHADER, fadeFragmentShaderSource)
+		);
+
+		const linePositionLoc = gl.getAttribLocation(lineProgram, 'a_position');
+		const lineColorLoc = gl.getAttribLocation(lineProgram, 'a_color');
+		const fadePositionLoc = gl.getAttribLocation(fadeProgram, 'a_position');
+		const fadeColorLoc = gl.getUniformLocation(fadeProgram, 'u_color');
+
+		const linePositionBuffer = gl.createBuffer()!;
+		const lineColorBuffer = gl.createBuffer()!;
+
+		const fadeBuffer = gl.createBuffer()!;
+		gl.bindBuffer(gl.ARRAY_BUFFER, fadeBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+			-1, -1, 1, -1, -1, 1,
+			-1, 1, 1, -1, 1, 1
+		]), gl.STATIC_DRAW);
+
+		const positionData = new Float32Array(PARTICLE_COUNT * 12);
+		const colorData = new Float32Array(PARTICLE_COUNT * 24);
+
+		function resize() {
+			const rect = container.getBoundingClientRect();
+			width = rect.width;
+			height = rect.height;
+
+			const dpr = Math.min(window.devicePixelRatio || 1, 2);
+			canvas.width = width * dpr;
+			canvas.height = height * dpr;
+			gl!.viewport(0, 0, canvas.width, canvas.height);
+
+			// Clear to background color (resizing clears buffer to black)
+			gl!.clearColor(bgR, bgG, bgB, 1);
+			gl!.clear(gl!.COLOR_BUFFER_BIT);
+		}
+
+		function animate() {
+			time += 0.016;
+			updateMouseState();
+
+			const fadeAmount = 0.012;
+			const keepAmount = 1.0 - fadeAmount;
+
+			gl!.useProgram(fadeProgram);
+			gl!.bindBuffer(gl!.ARRAY_BUFFER, fadeBuffer);
+			gl!.enableVertexAttribArray(fadePositionLoc);
+			gl!.vertexAttribPointer(fadePositionLoc, 2, gl!.FLOAT, false, 0, 0);
+
+			gl!.blendFunc(gl!.DST_COLOR, gl!.ZERO);
+			gl!.uniform4f(fadeColorLoc, keepAmount, keepAmount, keepAmount, 1.0);
+			gl!.drawArrays(gl!.TRIANGLES, 0, 6);
+
+			gl!.blendFunc(gl!.ONE, gl!.ONE);
+			gl!.uniform4f(fadeColorLoc, bgR * fadeAmount, bgG * fadeAmount, bgB * fadeAmount, 1.0);
+			gl!.drawArrays(gl!.TRIANGLES, 0, 6);
+
+			gl!.blendFunc(gl!.SRC_ALPHA, gl!.ONE_MINUS_SRC_ALPHA);
+
+			const quadCount = buildParticleData(positionData, colorData);
+
+			if (quadCount > 0) {
+				gl!.useProgram(lineProgram);
+
+				gl!.bindBuffer(gl!.ARRAY_BUFFER, linePositionBuffer);
+				gl!.bufferData(gl!.ARRAY_BUFFER, positionData.subarray(0, quadCount * 12), gl!.DYNAMIC_DRAW);
+				gl!.enableVertexAttribArray(linePositionLoc);
+				gl!.vertexAttribPointer(linePositionLoc, 2, gl!.FLOAT, false, 0, 0);
+
+				gl!.bindBuffer(gl!.ARRAY_BUFFER, lineColorBuffer);
+				gl!.bufferData(gl!.ARRAY_BUFFER, colorData.subarray(0, quadCount * 24), gl!.DYNAMIC_DRAW);
+				gl!.enableVertexAttribArray(lineColorLoc);
+				gl!.vertexAttribPointer(lineColorLoc, 4, gl!.FLOAT, false, 0, 0);
+
+				gl!.drawArrays(gl!.TRIANGLES, 0, quadCount * 6);
+			}
+
+			requestAnimationFrame(animate);
+		}
+
+		let started = false;
 		const resizeObserver = new ResizeObserver(() => {
 			resize();
-			if (!animating) {
-				animating = true;
+			if (!started) {
+				started = true;
 				initParticles();
-				// Clear to cream color
-				gl.clearColor(bgR, bgG, bgB, 1);
-				gl.clear(gl.COLOR_BUFFER_BIT);
+				gl!.clearColor(bgR, bgG, bgB, 1);
+				gl!.clear(gl!.COLOR_BUFFER_BIT);
 				animate();
+				console.log('⚠️ WebGL fallback renderer active (WebGPU not available)');
 			}
 		});
 
@@ -607,6 +892,16 @@
 			targetMouseX = (e.clientX - rect.left) / width;
 			targetMouseY = (e.clientY - rect.top) / height;
 		});
+	}
+
+	// ============================================================
+	// Initialize
+	// ============================================================
+	async function init() {
+		const webgpuSuccess = await initWebGPU();
+		if (!webgpuSuccess) {
+			initWebGL();
+		}
 	}
 
 	if (document.readyState === 'loading') {
