@@ -2,7 +2,13 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import HeroCanvas from '../components/HeroCanvas.astro';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+).slice(0, 3);
 ---
 
 <!doctype html>
@@ -13,272 +19,670 @@ import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
 	<body>
 		<Header />
 		<main>
-			<article class="intro">
-				<header>
-					<h1>Birol Senturk</h1>
-					<p class="tagline">Software Developer</p>
-					<div class="accent-line"></div>
-				</header>
-				
-				<div class="about">
-					<p>
-						I'm passionate about exploring emerging tech stacks and experimenting with LLMs to build meaningful solutions. 
-						Currently working at 4XDigital.ai, a startup making advertising accessible to small and medium businesses.
-					</p>
-					<p>
-						When I'm not coding, you'll find me capturing moments through photography or creating art that blends technology with creativity.
-					</p>
+			<!-- Hero Section -->
+			<section class="hero">
+				<HeroCanvas />
+				<div class="container hero-container">
+					<div class="hero-intro">
+						<span class="hero-greeting">Hello, I'm</span>
+						<h1 class="hero-name">Birol<br/>Senturk</h1>
+						<div class="hero-title-line">
+							<span class="hero-dash"></span>
+							<span class="hero-title">Software Developer & Builder</span>
+						</div>
+					</div>
+					<div class="hero-text">
+						<p class="hero-desc">
+							I turn ideas into working software. Building web applications
+							and AI-powered tools that solve real problems.
+						</p>
+						<div class="hero-actions">
+							<a href="#contact" class="btn btn--primary">Get in Touch</a>
+							<a href="#work" class="btn btn--outline">View Projects</a>
+						</div>
+					</div>
 				</div>
-			</article>
+			</section>
 
-			<aside class="sidebar">
-				<section class="connect">
-					<h3>Connect</h3>
-					<ul class="link-list">
-						<li><a href="https://twitter.com/senturkbirol" target="_blank">Twitter</a></li>
-						<li><a href="https://github.com/bisen" target="_blank">GitHub</a></li>
-						<li><a href="https://www.linkedin.com/in/birolsenturk" target="_blank">LinkedIn</a></li>
-						<li><a href="mailto:birolsenturk@outlook.com">Email</a></li>
-						<li><a href="https://bisen.github.io/cv/" target="_blank">CV</a></li>
-					</ul>
-				</section>
+			<!-- Services Section -->
+			<section class="services" id="services">
+				<div class="container">
+					<span class="section-label">What I Do</span>
+					<h2>Services</h2>
+					<div class="services-grid">
+						<div class="service-card">
+							<div class="service-number">01</div>
+							<h3>Web Applications</h3>
+							<p>Custom web apps built with modern tools. React, Node, TypeScript — whatever fits your needs best.</p>
+						</div>
+						<div class="service-card">
+							<div class="service-number">02</div>
+							<h3>AI Integration</h3>
+							<p>Add intelligence to your product. LLM features, chatbots, and automation that actually works.</p>
+						</div>
+						<div class="service-card">
+							<div class="service-number">03</div>
+							<h3>Technical Consulting</h3>
+							<p>Architecture guidance, code reviews, and honest advice on technology decisions.</p>
+						</div>
+					</div>
+				</div>
+			</section>
 
-				<section class="work">
-					<h3>Current Work</h3>
-					<ul class="project-list">
-						<li class="project-item">
-							<a href="https://4xdigital.ai" target="_blank">4XDigital.ai</a>
-							<span class="project-desc">Making advertising accessible to SMBs</span>
-							<span class="project-status active">• Active</span>
-						</li>
-						<li class="project-item">
-							<a href="https://sevkio.com" target="_blank">Sevkio</a>
-							<span class="project-desc">Logistics tool for small businesses</span>
-							<span class="project-status wip">• WIP</span>
-						</li>
-						<li class="project-item">
-							<a href="https://forgekit.org" target="_blank">ForgeKit</a>
-							<span class="project-desc">LLM powered personal branding toolkit</span>
-							<span class="project-status wip">• WIP</span>
-						</li>
-					</ul>
-				</section>
-			</aside>
+			<!-- Work Section -->
+			<section class="work" id="work">
+				<div class="container">
+					<span class="section-label">Selected Work</span>
+					<h2>Projects</h2>
+					<div class="projects-list">
+						<a href="https://4xdigital.ai" target="_blank" class="project-card">
+							<div class="project-info">
+								<span class="project-tag">Active</span>
+								<h3>4XDigital.ai</h3>
+								<p>Making digital advertising accessible to small and medium businesses through AI-powered campaign management.</p>
+							</div>
+							<div class="project-arrow">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M7 17L17 7M17 7H7M17 7V17"/>
+								</svg>
+							</div>
+						</a>
+						<a href="https://sevkio.com" target="_blank" class="project-card">
+							<div class="project-info">
+								<span class="project-tag">In Development</span>
+								<h3>Sevkio</h3>
+								<p>Logistics management tool designed specifically for small businesses to streamline their shipping operations.</p>
+							</div>
+							<div class="project-arrow">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M7 17L17 7M17 7H7M17 7V17"/>
+								</svg>
+							</div>
+						</a>
+						<a href="https://forgekit.org" target="_blank" class="project-card">
+							<div class="project-info">
+								<span class="project-tag">In Development</span>
+								<h3>ForgeKit</h3>
+								<p>LLM-powered personal branding toolkit helping professionals craft their digital presence.</p>
+							</div>
+							<div class="project-arrow">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M7 17L17 7M17 7H7M17 7V17"/>
+								</svg>
+							</div>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			<!-- Blog Section -->
+			<section class="blog" id="blog">
+				<div class="container">
+					<div class="blog-header">
+						<div>
+							<span class="section-label">Insights</span>
+							<h2>Writing</h2>
+						</div>
+						<a href="/blog" class="btn btn--outline">All Posts</a>
+					</div>
+					{posts.length > 0 ? (
+						<div class="blog-grid">
+							{posts.map((post) => (
+								<a href={`/blog/${post.id}/`} class="blog-card">
+									<time datetime={post.data.pubDate.toISOString()}>
+										{post.data.pubDate.toLocaleDateString('en-us', { year: 'numeric', month: 'short', day: 'numeric' })}
+									</time>
+									<h3>{post.data.title}</h3>
+									<p>{post.data.description}</p>
+								</a>
+							))}
+						</div>
+					) : (
+						<p class="text-muted">New posts coming soon.</p>
+					)}
+				</div>
+			</section>
+
+			<!-- Creative Section -->
+			<section class="creative" id="creative">
+				<div class="container">
+					<span class="section-label">Beyond Code</span>
+					<h2>Creative Work</h2>
+					<p class="creative-intro">When I'm not building software, I explore the world through photography and art.</p>
+					<div class="creative-grid">
+						<a href="/photography" class="creative-card">
+							<div class="creative-icon">
+								<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+									<rect x="2" y="6" width="20" height="14" rx="2"/>
+									<circle cx="12" cy="13" r="4"/>
+									<path d="M6 6V4h4"/>
+								</svg>
+							</div>
+							<h3>Photography</h3>
+							<p>Capturing moments and perspectives through the lens.</p>
+						</a>
+						<a href="/art" class="creative-card">
+							<div class="creative-icon">
+								<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+									<path d="M12 2L2 7l10 5 10-5-10-5z"/>
+									<path d="M2 17l10 5 10-5"/>
+									<path d="M2 12l10 5 10-5"/>
+								</svg>
+							</div>
+							<h3>Art</h3>
+							<p>Blending technology with creative expression.</p>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			<!-- Contact Section -->
+			<section class="contact" id="contact">
+				<div class="container">
+					<div class="contact-content">
+						<div class="contact-info">
+							<span class="section-label">Get in Touch</span>
+							<h2>Have a project?</h2>
+							<p>I'm always open to discussing new opportunities. Whether you have a clear vision or just an idea, let's talk about how I can help.</p>
+							<div class="contact-links">
+								<a href="mailto:birolsenturk@outlook.com" class="contact-link">
+									<span class="contact-link-label">Email</span>
+									<span class="contact-link-value">birolsenturk@outlook.com</span>
+								</a>
+								<a href="https://www.linkedin.com/in/birolsenturk" target="_blank" class="contact-link">
+									<span class="contact-link-label">LinkedIn</span>
+									<span class="contact-link-value">birolsenturk</span>
+								</a>
+								<a href="https://github.com/bisen" target="_blank" class="contact-link">
+									<span class="contact-link-label">GitHub</span>
+									<span class="contact-link-value">bisen</span>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
 		</main>
 		<Footer />
 	</body>
 </html>
 
 <style>
-	main {
+	/* Hero Section */
+	.hero {
+		position: relative;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		border-bottom: none;
+		overflow: hidden;
+	}
+
+	.hero-container {
+		position: relative;
+		z-index: 1;
+		padding: var(--space-xl) 0;
 		display: grid;
-		grid-template-columns: 2fr 1fr;
-		gap: 5rem;
-		align-items: start;
+		grid-template-columns: 1.2fr 1fr;
+		gap: var(--space-lg);
+		align-items: center;
 	}
-	
-	.intro header {
-		margin-bottom: 3rem;
-		padding-bottom: 2rem;
+
+	/* Hero Introduction - Name Block */
+	.hero-intro {
 		position: relative;
 	}
-	
-	.intro h1 {
-		margin-bottom: 0.75rem;
-		font-size: clamp(2.25rem, 5vw, 3.5rem);
-		position: relative;
-	}
-	
-	.tagline {
-		font-size: 1.375rem;
-		color: var(--accent-light);
-		font-style: italic;
-		margin: 0 0 1.5rem 0;
-		font-weight: 400;
-	}
-	
-	.accent-line {
-		width: 60px;
-		height: 3px;
-		background: linear-gradient(90deg, var(--accent) 0%, var(--secondary) 100%);
-		border-radius: 2px;
-		transition: width 0.3s ease;
-	}
-	
-	.intro:hover .accent-line {
-		width: 120px;
-	}
-	
-	.about p {
-		font-size: 1.2rem;
-		line-height: 1.7;
-		margin-bottom: 1.75rem;
-	}
-	
-	.sidebar {
-		padding-top: 2rem;
-		border-left: 1px solid var(--border);
-		padding-left: 2rem;
-	}
-	
-	.sidebar section {
-		margin-bottom: 3.5rem;
-		position: relative;
-	}
-	
-	.sidebar h3 {
-		font-size: 1rem;
-		margin-bottom: 1.25rem;
-		color: var(--accent-light);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		font-weight: 600;
-		font-family: 'Crimson Text', serif;
-		position: relative;
-		padding-left: 1rem;
-	}
-	
-	.sidebar h3::before {
-		content: '';
-		position: absolute;
-		left: 0;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 4px;
-		height: 4px;
-		background: var(--accent);
-		border-radius: 50%;
-	}
-	
-	.link-list, .project-list {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-	
-	.link-list li {
-		margin-bottom: 0.875rem;
-		transition: transform 0.2s ease;
-	}
-	
-	.link-list li:hover {
-		transform: translateX(4px);
-	}
-	
-	.link-list a {
-		font-size: 1.1rem;
+
+	.hero-greeting {
+		display: block;
+		font-family: var(--font-body);
+		font-size: 1.125rem;
 		font-weight: 500;
-		text-decoration: none;
-		border-bottom: 1px solid transparent;
-		transition: all 0.2s ease;
-		display: inline-block;
-		position: relative;
+		color: var(--accent);
+		letter-spacing: 0.05em;
+		margin-bottom: var(--space-xs);
+		opacity: 0;
+		animation: fadeSlideUp 0.6s ease forwards;
+		animation-delay: 0.2s;
 	}
-	
-	.link-list a::after {
+
+	.hero-name {
+		font-family: var(--font-display);
+		font-size: clamp(4.5rem, 12vw, 9rem);
+		font-weight: 800;
+		line-height: 0.9;
+		letter-spacing: -0.04em;
+		color: var(--ink);
+		margin: 0;
+		position: relative;
+		opacity: 0;
+		animation: fadeSlideUp 0.8s ease forwards;
+		animation-delay: 0.4s;
+	}
+
+	.hero-name::after {
 		content: '';
 		position: absolute;
-		right: -16px;
-		top: 50%;
-		transform: translateY(-50%);
-		width: 8px;
-		height: 1px;
+		bottom: -0.15em;
+		left: 0;
+		width: 1.5em;
+		height: 6px;
 		background: var(--accent);
 		opacity: 0;
-		transition: opacity 0.2s ease;
+		animation: expandWidth 0.5s ease forwards;
+		animation-delay: 1s;
 	}
-	
-	.link-list a:hover {
-		color: var(--accent-light);
-		border-bottom-color: var(--accent);
+
+	.hero-title-line {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		margin-top: var(--space-md);
+		opacity: 0;
+		animation: fadeSlideUp 0.6s ease forwards;
+		animation-delay: 0.8s;
 	}
-	
-	.link-list a:hover::after {
-		opacity: 1;
+
+	.hero-dash {
+		width: 40px;
+		height: 2px;
+		background: var(--accent);
 	}
-	
-	.project-item {
-		margin-bottom: 1.25rem;
-		transition: transform 0.2s ease;
-	}
-	
-	.project-item:hover {
-		transform: translateX(4px);
-	}
-	
-	.project-item:last-child {
-		margin-bottom: 0;
-	}
-	
-	.project-item a {
-		display: inline-block;
-		font-size: 1.1rem;
-		font-weight: 500;
-		margin-bottom: 0.25rem;
-		text-decoration: none;
-		color: rgb(var(--black));
-		transition: color 0.2s ease;
-	}
-	
-	.project-item:hover a {
-		color: var(--accent-light);
-	}
-	
-	.project-desc {
+
+	.hero-title {
+		font-family: var(--font-display);
 		font-size: 0.875rem;
-		color: rgb(var(--gray));
-		display: block;
-		margin-bottom: 0.25rem;
-		line-height: 1.4;
-	}
-	
-	.project-status {
-		font-size: 0.7rem;
-		font-weight: 500;
+		font-weight: 600;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: rgb(var(--gray));
-		display: inline-block;
+		color: var(--ink-muted);
 	}
-	
-	.project-status.active {
-		color: var(--secondary-light);
+
+	/* Hero Text Block */
+	.hero-text {
+		max-width: 420px;
+		opacity: 0;
+		animation: fadeSlideUp 0.6s ease forwards;
+		animation-delay: 1s;
 	}
-	
-	.project-status.wip {
+
+	.hero-desc {
+		font-size: 1.1875rem;
+		line-height: 1.7;
+		color: var(--text-muted);
+		margin-bottom: var(--space-md);
+	}
+
+	.hero-actions {
+		display: flex;
+		gap: var(--space-sm);
+		flex-wrap: wrap;
+	}
+
+	/* Hero Animations */
+	@keyframes fadeSlideUp {
+		from {
+			opacity: 0;
+			transform: translateY(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes expandWidth {
+		from {
+			opacity: 0;
+			width: 0;
+		}
+		to {
+			opacity: 1;
+			width: 1.5em;
+		}
+	}
+
+	/* Services Section */
+	.services-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--space-md);
+		margin-top: var(--space-lg);
+	}
+
+	.service-card {
+		padding: var(--space-md);
+		background: var(--cream-dark);
+		transition: transform 0.3s ease;
+	}
+
+	.service-card:hover {
+		transform: translateY(-4px);
+	}
+
+	.service-number {
+		font-family: var(--font-display);
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--accent);
+		margin-bottom: var(--space-sm);
+	}
+
+	.service-card h3 {
+		margin-bottom: 0.75rem;
+	}
+
+	.service-card p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+	}
+
+	/* Work Section */
+	.projects-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		background: var(--border);
+		margin-top: var(--space-lg);
+	}
+
+	.project-card {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: var(--space-md);
+		background: var(--cream);
+		text-decoration: none;
+		transition: all 0.3s ease;
+	}
+
+	.project-card:hover {
+		background: var(--cream-dark);
+		padding-left: calc(var(--space-md) + 8px);
+	}
+
+	.project-tag {
+		font-family: var(--font-display);
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--accent);
+		display: block;
+		margin-bottom: 0.5rem;
+	}
+
+	.project-info h3 {
+		color: var(--ink);
+		margin-bottom: 0.5rem;
+		transition: color 0.3s ease;
+	}
+
+	.project-card:hover .project-info h3 {
 		color: var(--accent);
 	}
-	
-	@media (max-width: 768px) {
-		main {
+
+	.project-info p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+		max-width: 500px;
+	}
+
+	.project-arrow {
+		color: var(--gray-400);
+		transition: all 0.3s ease;
+	}
+
+	.project-card:hover .project-arrow {
+		color: var(--accent);
+		transform: translate(4px, -4px);
+	}
+
+	/* Blog Section */
+	.blog-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		margin-bottom: var(--space-lg);
+	}
+
+	.blog-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--space-md);
+	}
+
+	.blog-card {
+		padding: var(--space-md);
+		background: var(--cream-dark);
+		text-decoration: none;
+		transition: transform 0.3s ease;
+		display: block;
+	}
+
+	.blog-card:hover {
+		transform: translateY(-4px);
+	}
+
+	.blog-card time {
+		font-family: var(--font-display);
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--accent);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.blog-card h3 {
+		color: var(--ink);
+		margin: 0.75rem 0;
+		font-size: 1.25rem;
+		transition: color 0.3s ease;
+	}
+
+	.blog-card:hover h3 {
+		color: var(--accent);
+	}
+
+	.blog-card p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+	}
+
+	/* Creative Section */
+	.creative-intro {
+		color: var(--text-muted);
+		max-width: 500px;
+		margin-bottom: var(--space-lg);
+	}
+
+	.creative-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: var(--space-md);
+	}
+
+	.creative-card {
+		padding: var(--space-lg);
+		background: var(--cream-dark);
+		text-decoration: none;
+		transition: all 0.3s ease;
+		text-align: center;
+	}
+
+	.creative-card:hover {
+		background: var(--ink);
+	}
+
+	.creative-icon {
+		color: var(--accent);
+		margin-bottom: var(--space-sm);
+		transition: color 0.3s ease;
+	}
+
+	.creative-card:hover .creative-icon {
+		color: var(--accent-light);
+	}
+
+	.creative-card h3 {
+		color: var(--ink);
+		margin-bottom: 0.5rem;
+		transition: color 0.3s ease;
+	}
+
+	.creative-card:hover h3 {
+		color: var(--cream);
+	}
+
+	.creative-card p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+		transition: color 0.3s ease;
+	}
+
+	.creative-card:hover p {
+		color: var(--gray-400);
+	}
+
+	/* Contact Section */
+	.contact {
+		background: var(--ink);
+		color: var(--cream);
+	}
+
+	.contact .section-label {
+		color: var(--accent-light);
+	}
+
+	.contact h2 {
+		color: var(--cream);
+	}
+
+	.contact p {
+		color: var(--gray-400);
+		max-width: 500px;
+		margin-bottom: var(--space-lg);
+	}
+
+	.contact-links {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-sm);
+	}
+
+	.contact-link {
+		display: flex;
+		flex-direction: column;
+		padding: var(--space-sm) 0;
+		border-bottom: 1px solid rgba(255,255,255,0.1);
+		text-decoration: none;
+		transition: all 0.3s ease;
+	}
+
+	.contact-link:hover {
+		padding-left: 8px;
+	}
+
+	.contact-link-label {
+		font-family: var(--font-display);
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--accent-light);
+	}
+
+	.contact-link-value {
+		font-size: 1.125rem;
+		color: var(--cream);
+		transition: color 0.3s ease;
+	}
+
+	.contact-link:hover .contact-link-value {
+		color: var(--accent-light);
+	}
+
+	/* Responsive */
+	@media (max-width: 968px) {
+		.services-grid {
 			grid-template-columns: 1fr;
-			gap: 3rem;
 		}
-		
-		.intro header {
+
+		.blog-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.creative-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	@media (max-width: 968px) {
+		.hero-container {
+			grid-template-columns: 1fr;
+			gap: var(--space-md);
+		}
+
+		.hero-name {
+			font-size: clamp(3.5rem, 15vw, 6rem);
+		}
+	}
+
+	@media (max-width: 768px) {
+		.hero {
+			min-height: auto;
+			padding-top: var(--space-lg);
+			padding-bottom: var(--space-md);
+		}
+
+		.hero-container {
+			padding-top: var(--space-lg);
+			padding-bottom: var(--space-md);
+		}
+
+		.hero-intro {
 			text-align: center;
 		}
-		
-		.sidebar {
-			padding-top: 0;
-			border-left: none;
-			padding-left: 0;
-			border-top: 1px solid var(--border);
-			padding-top: 2rem;
+
+		.hero-name {
+			font-size: clamp(3rem, 18vw, 5rem);
 		}
-		
-		.sidebar section {
-			margin-bottom: 2.5rem;
+
+		.hero-name::after {
+			left: 50%;
+			transform: translateX(-50%);
 		}
-		
-		.project-item {
-			padding: 1rem;
+
+		.hero-title-line {
+			justify-content: center;
 		}
-		
-		.project-status {
-			position: static;
-			display: inline-block;
-			margin-top: 0.5rem;
+
+		.hero-text {
+			text-align: center;
+			max-width: 100%;
+		}
+
+		.hero-desc {
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+		.hero-actions {
+			justify-content: center;
+		}
+
+		.blog-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-sm);
+		}
+
+		.project-info p {
+			display: none;
 		}
 	}
 </style>
