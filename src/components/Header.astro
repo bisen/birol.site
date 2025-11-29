@@ -1,93 +1,200 @@
 ---
-import HeaderLink from './HeaderLink.astro';
 import { SITE_TITLE } from '../consts';
+
+const pathname = Astro.url.pathname;
+const isHome = pathname === '/';
 ---
 
 <header>
-	<nav>
-		<h2><a href="/">{SITE_TITLE}</a></h2>
-		<div class="internal-links">
-			<HeaderLink href="/">Home</HeaderLink>
-			<HeaderLink href="/blog">Blog</HeaderLink>
-			<HeaderLink href="/learnings">Learnings</HeaderLink>
-			<HeaderLink href="/photography">Photography</HeaderLink>
-			<HeaderLink href="/art">Art</HeaderLink>
-			<HeaderLink href="/about">About</HeaderLink>
+	<nav class="container">
+		<a href="/" class="logo">{SITE_TITLE}</a>
+		<div class="nav-links">
+			{isHome ? (
+				<>
+					<a href="#services">Services</a>
+					<a href="#work">Work</a>
+					<a href="/blog">Blog</a>
+					<a href="#creative">Creative</a>
+					<a href="#contact" class="nav-cta">Contact</a>
+				</>
+			) : (
+				<>
+					<a href="/#services">Services</a>
+					<a href="/#work">Work</a>
+					<a href="/blog" class:list={[{ active: pathname.startsWith('/blog') }]}>Blog</a>
+					<a href="/photography" class:list={[{ active: pathname === '/photography' }]}>Photography</a>
+					<a href="/art" class:list={[{ active: pathname === '/art' }]}>Art</a>
+					<a href="/#contact" class="nav-cta">Contact</a>
+				</>
+			)}
 		</div>
+		<button class="mobile-toggle" aria-label="Toggle menu">
+			<span></span>
+			<span></span>
+		</button>
 	</nav>
 </header>
+
 <style>
 	header {
-		margin: 0;
-		padding: 1.5rem 2rem;
-		background: rgba(28, 25, 23, 0.95);
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		background: var(--cream);
 		border-bottom: 1px solid var(--border);
-		backdrop-filter: blur(10px);
-		-webkit-backdrop-filter: blur(10px);
-	}
-	
-	h2 {
-		margin: 0;
-		font-size: 1.125rem;
-		font-weight: 600;
-		font-family: 'Playfair Display', serif;
 	}
 
-	h2 a,
-	h2 a.active {
-		text-decoration: none;
-		color: var(--warm-white);
-	}
-	
 	nav {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		max-width: 800px;
-		margin: 0 auto;
+		padding-top: 1.25rem;
+		padding-bottom: 1.25rem;
 	}
-	
-	nav a {
-		padding: 0.5rem 0.75rem;
-		color: rgb(var(--gray-dark));
+
+	.logo {
+		font-family: var(--font-display);
+		font-size: 1.125rem;
+		font-weight: 700;
+		color: var(--ink);
+		text-decoration: none;
+		letter-spacing: -0.02em;
+	}
+
+	.logo:hover {
+		color: var(--accent);
+	}
+
+	.nav-links {
+		display: flex;
+		align-items: center;
+		gap: 2rem;
+	}
+
+	.nav-links a {
+		font-family: var(--font-body);
+		font-size: 0.875rem;
+		font-weight: 500;
+		color: var(--ink-muted);
 		text-decoration: none;
 		transition: color 0.2s ease;
-		font-weight: 400;
-		font-size: 0.95rem;
-		border-bottom: 2px solid transparent;
+		position: relative;
 	}
-	
-	nav a:hover {
-		color: var(--secondary-light);
-		border-bottom-color: var(--secondary-light);
+
+	.nav-links a::after {
+		content: '';
+		position: absolute;
+		bottom: -4px;
+		left: 0;
+		width: 0;
+		height: 2px;
+		background: var(--accent);
+		transition: width 0.2s ease;
 	}
-	
-	nav a.active {
-		color: var(--secondary-light);
-		border-bottom-color: var(--secondary);
+
+	.nav-links a:hover {
+		color: var(--ink);
 	}
-	
-	.internal-links {
-		display: flex;
-		gap: 1.5rem;
+
+	.nav-links a:hover::after {
+		width: 100%;
 	}
-	
+
+	.nav-links a.active {
+		color: var(--accent);
+	}
+
+	.nav-links a.active::after {
+		width: 100%;
+	}
+
+	.nav-cta {
+		font-family: var(--font-display) !important;
+		font-weight: 600 !important;
+		font-size: 0.75rem !important;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		padding: 0.75rem 1.25rem;
+		background: var(--ink);
+		color: var(--cream) !important;
+		transition: all 0.2s ease !important;
+	}
+
+	.nav-cta::after {
+		display: none !important;
+	}
+
+	.nav-cta:hover {
+		background: var(--accent);
+		color: white !important;
+	}
+
+	.mobile-toggle {
+		display: none;
+		flex-direction: column;
+		gap: 6px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 4px;
+	}
+
+	.mobile-toggle span {
+		display: block;
+		width: 24px;
+		height: 2px;
+		background: var(--ink);
+		transition: all 0.2s ease;
+	}
+
 	@media (max-width: 768px) {
-		header {
-			padding: 1rem;
+		.nav-links {
+			display: none;
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: var(--cream);
+			flex-direction: column;
+			padding: var(--space-md);
+			gap: var(--space-sm);
+			border-bottom: 1px solid var(--border);
+			box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 		}
-		
-		.internal-links {
-			gap: 1rem;
+
+		.nav-links.open {
+			display: flex;
 		}
-		
-		nav a {
-			padding: 0.5rem;
-			font-size: 0.875rem;
+
+		.nav-links a {
+			padding: 0.75rem 0;
+			width: 100%;
 		}
-		
-		h2 {
-			font-size: 1rem;
+
+		.nav-cta {
+			width: 100%;
+			text-align: center;
+			margin-top: var(--space-xs);
+		}
+
+		.mobile-toggle {
+			display: flex;
 		}
 	}
 </style>
+
+<script>
+	const toggle = document.querySelector('.mobile-toggle');
+	const navLinks = document.querySelector('.nav-links');
+
+	toggle?.addEventListener('click', () => {
+		navLinks?.classList.toggle('open');
+	});
+
+	// Close menu when clicking a link
+	navLinks?.querySelectorAll('a').forEach(link => {
+		link.addEventListener('click', () => {
+			navLinks.classList.remove('open');
+		});
+	});
+</script>
