@@ -173,7 +173,7 @@ import { SITE_TITLE } from '../consts';
 
 	.photo-item--wide { grid-column: span 2; }
 
-	.photo-item canvas {
+	.photo-item img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
@@ -181,7 +181,7 @@ import { SITE_TITLE } from '../consts';
 		transition: transform 0.5s ease;
 	}
 
-	.photo-item:hover canvas { transform: scale(1.05); }
+	.photo-item:hover img { transform: scale(1.05); }
 
 	.photo-image {
 		position: relative;
@@ -390,7 +390,7 @@ import { SITE_TITLE } from '../consts';
 
 	.thumbnail-item:hover { opacity: 0.8; }
 	.thumbnail-item.active { opacity: 1; border-color: var(--accent); }
-	.thumbnail-item canvas { width: 100%; height: 100%; object-fit: cover; }
+	.thumbnail-item img { width: 100%; height: 100%; object-fit: cover; }
 
 	@media (max-width: 900px) {
 		.photo-grid { grid-template-columns: repeat(2, 1fr); }
@@ -436,22 +436,6 @@ import { SITE_TITLE } from '../consts';
 	const currentIndexEl = document.getElementById('current-index') as HTMLElement;
 	const totalCountEl = document.getElementById('total-count') as HTMLElement;
 	const thumbnailTrack = document.getElementById('thumbnail-track') as HTMLElement;
-
-	async function renderImageToCanvas(canvas: HTMLCanvasElement, url: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			img.crossOrigin = 'anonymous';
-			img.onload = () => {
-				canvas.width = img.naturalWidth;
-				canvas.height = img.naturalHeight;
-				const ctx = canvas.getContext('2d');
-				if (ctx) ctx.drawImage(img, 0, 0);
-				resolve();
-			};
-			img.onerror = reject;
-			img.src = url;
-		});
-	}
 
 	async function renderImageToCanvasFit(canvas: HTMLCanvasElement, url: string): Promise<void> {
 		return new Promise((resolve, reject) => {
@@ -511,20 +495,21 @@ import { SITE_TITLE } from '../consts';
 			const imageDiv = document.createElement('div');
 			imageDiv.className = 'photo-image';
 
-			const canvas = document.createElement('canvas');
-			canvas.style.backgroundColor = '#F0EBE3';
+			const img = document.createElement('img');
+			img.src = `/api/gallery/${item.id}/thumbnail`;
+			img.alt = item.title;
+			img.loading = 'lazy';
+			img.draggable = false;
 
 			const overlay = document.createElement('div');
 			overlay.className = 'photo-overlay';
 			overlay.innerHTML = `<div class="photo-info"><h3>${item.title}</h3></div>`;
 
-			imageDiv.appendChild(canvas);
+			imageDiv.appendChild(img);
 			imageDiv.appendChild(overlay);
 			article.appendChild(imageDiv);
 			article.addEventListener('click', () => openLightbox(i));
 			grid.appendChild(article);
-
-			renderImageToCanvas(canvas, `/api/gallery/${item.id}/image`).catch(console.error);
 		}
 
 		requestAnimationFrame(() => grid.classList.add('loaded'));
@@ -535,11 +520,13 @@ import { SITE_TITLE } from '../consts';
 		for (let i = 0; i < items.length; i++) {
 			const thumb = document.createElement('button');
 			thumb.className = 'thumbnail-item';
-			const canvas = document.createElement('canvas');
-			thumb.appendChild(canvas);
+			const img = document.createElement('img');
+			img.src = `/api/gallery/${items[i].id}/thumbnail`;
+			img.alt = items[i].title;
+			img.draggable = false;
+			thumb.appendChild(img);
 			thumb.addEventListener('click', () => goToImage(i));
 			thumbnailTrack.appendChild(thumb);
-			renderImageToCanvas(canvas, `/api/gallery/${items[i].id}/image`).catch(console.error);
 		}
 	}
 

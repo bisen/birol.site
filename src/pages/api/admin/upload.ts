@@ -24,6 +24,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 		const formData = await request.formData();
 		const file = formData.get('file') as File;
+		const thumbnail = formData.get('thumbnail') as File;
 		const title = formData.get('title') as string;
 		const date = formData.get('date') as string;
 		const medium = formData.get('medium') as string;
@@ -63,6 +64,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 				contentType: file.type
 			}
 		});
+
+		// Upload the thumbnail if provided
+		if (thumbnail) {
+			const thumbBuffer = await thumbnail.arrayBuffer();
+			await bucket.put(`${id}/thumbnail.webp`, thumbBuffer, {
+				httpMetadata: {
+					contentType: 'image/webp'
+				}
+			});
+		}
 
 		// Create and upload metadata
 		const metadata = {

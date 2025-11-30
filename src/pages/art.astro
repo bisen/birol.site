@@ -190,7 +190,7 @@ import { SITE_TITLE } from '../consts';
 	.art-item:not(.art-item--featured) .art-image { aspect-ratio: 1; }
 	.art-item--featured .art-image { aspect-ratio: 4/3; }
 
-	.art-image canvas {
+	.art-image img {
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
@@ -198,7 +198,7 @@ import { SITE_TITLE } from '../consts';
 		transition: transform 0.5s ease;
 	}
 
-	.art-item:hover .art-image canvas { transform: scale(1.03); }
+	.art-item:hover .art-image img { transform: scale(1.03); }
 
 	.art-details {
 		padding: var(--space-sm) 0;
@@ -445,7 +445,7 @@ import { SITE_TITLE } from '../consts';
 
 	.thumbnail-item:hover { opacity: 0.8; }
 	.thumbnail-item.active { opacity: 1; border-color: var(--accent); }
-	.thumbnail-item canvas { width: 100%; height: 100%; object-fit: cover; }
+	.thumbnail-item img { width: 100%; height: 100%; object-fit: cover; }
 
 	@media (max-width: 768px) {
 		.art-grid { grid-template-columns: 1fr; }
@@ -484,22 +484,6 @@ import { SITE_TITLE } from '../consts';
 	const currentIndexEl = document.getElementById('current-index') as HTMLElement;
 	const totalCountEl = document.getElementById('total-count') as HTMLElement;
 	const thumbnailTrack = document.getElementById('thumbnail-track') as HTMLElement;
-
-	async function renderImageToCanvas(canvas: HTMLCanvasElement, url: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			const img = new Image();
-			img.crossOrigin = 'anonymous';
-			img.onload = () => {
-				canvas.width = img.naturalWidth;
-				canvas.height = img.naturalHeight;
-				const ctx = canvas.getContext('2d');
-				if (ctx) ctx.drawImage(img, 0, 0);
-				resolve();
-			};
-			img.onerror = reject;
-			img.src = url;
-		});
-	}
 
 	async function renderImageToCanvasFit(canvas: HTMLCanvasElement, url: string): Promise<void> {
 		return new Promise((resolve, reject) => {
@@ -559,9 +543,12 @@ import { SITE_TITLE } from '../consts';
 			const imageDiv = document.createElement('div');
 			imageDiv.className = 'art-image';
 
-			const canvas = document.createElement('canvas');
-			canvas.style.backgroundColor = '#F0EBE3';
-			imageDiv.appendChild(canvas);
+			const img = document.createElement('img');
+			img.src = `/api/gallery/${item.id}/thumbnail`;
+			img.alt = item.title;
+			img.loading = 'lazy';
+			img.draggable = false;
+			imageDiv.appendChild(img);
 
 			const details = document.createElement('div');
 			details.className = 'art-details';
@@ -577,8 +564,6 @@ import { SITE_TITLE } from '../consts';
 			article.appendChild(details);
 			article.addEventListener('click', () => openLightbox(i));
 			grid.appendChild(article);
-
-			renderImageToCanvas(canvas, `/api/gallery/${item.id}/image`).catch(console.error);
 		}
 
 		requestAnimationFrame(() => grid.classList.add('loaded'));
@@ -589,11 +574,13 @@ import { SITE_TITLE } from '../consts';
 		for (let i = 0; i < items.length; i++) {
 			const thumb = document.createElement('button');
 			thumb.className = 'thumbnail-item';
-			const canvas = document.createElement('canvas');
-			thumb.appendChild(canvas);
+			const img = document.createElement('img');
+			img.src = `/api/gallery/${items[i].id}/thumbnail`;
+			img.alt = items[i].title;
+			img.draggable = false;
+			thumb.appendChild(img);
 			thumb.addEventListener('click', () => goToImage(i));
 			thumbnailTrack.appendChild(thumb);
-			renderImageToCanvas(canvas, `/api/gallery/${items[i].id}/image`).catch(console.error);
 		}
 	}
 
