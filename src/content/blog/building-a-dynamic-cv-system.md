@@ -4,8 +4,6 @@ description: 'How I built a flexible CV rendering system that transforms structu
 pubDate: 2025-01-17
 ---
 
-# Building a Dynamic CV System with JSON and Handlebars
-
 Managing a CV can be tedious - every time you want to update your experience or skills, you need to edit HTML, worry about formatting consistency, and potentially break styling. I decided to solve this by building a dynamic CV system that separates content from presentation, making updates as simple as editing a JSON file.
 
 ## The Problem
