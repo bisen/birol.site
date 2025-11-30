@@ -160,31 +160,82 @@ const posts = (await getCollection('blog')).sort(
 					<h2>{t('creative.title')}</h2>
 					<p class="creative-intro">{t('creative.intro')}</p>
 					<div class="creative-grid">
-						<a href={`/${lang}/photography`} class="creative-card">
-							<div class="creative-icon">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-									<rect x="2" y="6" width="20" height="14" rx="2"/>
-									<circle cx="12" cy="13" r="4"/>
-									<path d="M6 6V4h4"/>
-								</svg>
+						<!-- Photography -->
+						<a href={`/${lang}/photography`} class="creative-card" id="photography-card" data-collection="photography">
+							<div class="creative-image">
+								<div class="creative-placeholder">
+									<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+										<rect x="2" y="6" width="20" height="14" rx="2"/>
+										<circle cx="12" cy="13" r="4"/>
+										<path d="M6 6V4h4"/>
+									</svg>
+								</div>
 							</div>
-							<h3>{t('creative.photography.title')}</h3>
-							<p>{t('creative.photography.description')}</p>
+							<span class="creative-label">{t('creative.photography.title')}</span>
 						</a>
-						<a href={`/${lang}/art`} class="creative-card">
-							<div class="creative-icon">
-								<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-									<path d="M12 2L2 7l10 5 10-5-10-5z"/>
-									<path d="M2 17l10 5 10-5"/>
-									<path d="M2 12l10 5 10-5"/>
-								</svg>
+						<!-- Art -->
+						<a href={`/${lang}/art`} class="creative-card" id="art-card" data-collection="art">
+							<div class="creative-image">
+								<div class="creative-placeholder">
+									<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+										<path d="M12 2L2 7l10 5 10-5-10-5z"/>
+										<path d="M2 17l10 5 10-5"/>
+										<path d="M2 12l10 5 10-5"/>
+									</svg>
+								</div>
 							</div>
-							<h3>{t('creative.art.title')}</h3>
-							<p>{t('creative.art.description')}</p>
+							<span class="creative-label">{t('creative.art.title')}</span>
 						</a>
 					</div>
 				</div>
 			</section>
+
+			<script>
+				// Fetch and display a random image for each creative card
+				async function loadCreativeImages() {
+					const cards = document.querySelectorAll('.creative-card');
+
+					for (const card of cards) {
+						const collection = card.getAttribute('data-collection');
+						const imageContainer = card.querySelector('.creative-image');
+						const placeholder = card.querySelector('.creative-placeholder');
+
+						try {
+							const response = await fetch(`/api/gallery?collection=${collection}`);
+							const data = await response.json();
+
+							if (data.items && data.items.length > 0) {
+								// Pick a random item
+								const randomIndex = Math.floor(Math.random() * data.items.length);
+								const item = data.items[randomIndex];
+
+								const img = document.createElement('img');
+								img.src = `/api/gallery/${item.id}/thumbnail`;
+								img.alt = item.title;
+								img.loading = 'lazy';
+								img.style.opacity = '0';
+								img.style.transition = 'opacity 0.5s ease';
+
+								img.onload = () => {
+									if (placeholder) placeholder.style.display = 'none';
+									img.style.opacity = '1';
+								};
+
+								imageContainer?.appendChild(img);
+							}
+						} catch (error) {
+							console.error(`Failed to load ${collection} image:`, error);
+						}
+					}
+				}
+
+				// Load images when DOM is ready
+				if (document.readyState === 'loading') {
+					document.addEventListener('DOMContentLoaded', loadCreativeImages);
+				} else {
+					loadCreativeImages();
+				}
+			</script>
 
 			<!-- Contact Section -->
 			<section class="contact" id="contact">
@@ -526,50 +577,83 @@ const posts = (await getCollection('blog')).sort(
 	.creative-grid {
 		display: grid;
 		grid-template-columns: repeat(2, 1fr);
-		gap: var(--space-md);
+		gap: var(--space-lg);
 	}
 
+	/* Creative Cards - Single featured image */
 	.creative-card {
-		padding: var(--space-lg);
-		background: var(--cream-dark);
+		display: block;
 		text-decoration: none;
-		transition: all 0.3s ease;
-		text-align: center;
+		position: relative;
+		aspect-ratio: 4 / 3;
+		min-height: 280px;
+		overflow: hidden;
+		background: var(--cream-dark);
+		transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.creative-card:hover {
-		background: var(--ink);
+		transform: translateY(-4px);
 	}
 
-	.creative-icon {
-		color: var(--accent);
-		margin-bottom: var(--space-sm);
-		transition: color 0.3s ease;
+	/* Image Container */
+	.creative-image {
+		position: absolute;
+		inset: 0;
 	}
 
-	.creative-card:hover .creative-icon {
-		color: var(--accent-light);
+	.creative-image img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+		filter: saturate(0.9);
 	}
 
-	.creative-card h3 {
-		color: var(--ink);
-		margin-bottom: 0.5rem;
-		transition: color 0.3s ease;
+	.creative-card:hover .creative-image img {
+		transform: scale(1.05);
+		filter: saturate(1);
 	}
 
-	.creative-card:hover h3 {
-		color: var(--cream);
-	}
-
-	.creative-card p {
-		color: var(--text-muted);
-		font-size: 0.9375rem;
-		margin: 0;
-		transition: color 0.3s ease;
-	}
-
-	.creative-card:hover p {
+	/* Placeholder when no images */
+	.creative-placeholder {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		color: var(--gray-400);
+		background: var(--cream-dark);
+		transition: all 0.3s ease;
+	}
+
+	.creative-card:hover .creative-placeholder {
+		color: var(--accent);
+	}
+
+	/* Floating label */
+	.creative-label {
+		position: absolute;
+		bottom: var(--space-md);
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 10;
+		font-family: var(--font-display);
+		font-size: 0.8125rem;
+		font-weight: 600;
+		letter-spacing: 0.15em;
+		text-transform: uppercase;
+		color: var(--ink);
+		background: rgba(255, 255, 255, 0.95);
+		backdrop-filter: blur(8px);
+		padding: 0.625rem 1.25rem;
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		white-space: nowrap;
+	}
+
+	.creative-card:hover .creative-label {
+		background: var(--ink);
+		color: var(--cream);
 	}
 
 	/* Contact Section */
@@ -642,6 +726,11 @@ const posts = (await getCollection('blog')).sort(
 
 		.creative-grid {
 			grid-template-columns: 1fr;
+			gap: var(--space-lg);
+		}
+
+		.creative-card {
+			min-height: 260px;
 		}
 
 		.hero-container {
@@ -772,11 +861,13 @@ const posts = (await getCollection('blog')).sort(
 
 		/* Creative mobile */
 		.creative-card {
-			padding: var(--space-md);
+			min-height: 200px;
+			aspect-ratio: 16 / 10;
 		}
 
-		.creative-card h3 {
-			font-size: 1.125rem;
+		.creative-label {
+			font-size: 0.75rem;
+			padding: 0.5rem 1rem;
 		}
 
 		/* Contact mobile */
