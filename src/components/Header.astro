@@ -148,37 +148,78 @@ const isHome = pathname === '/';
 	}
 
 	@media (max-width: 768px) {
+		header {
+			background: rgba(250, 247, 242, 0.95);
+			backdrop-filter: blur(10px);
+			-webkit-backdrop-filter: blur(10px);
+		}
+
 		.nav-links {
-			display: none;
+			display: flex;
 			position: absolute;
 			top: 100%;
 			left: 0;
 			right: 0;
-			background: var(--cream);
+			background: rgba(250, 247, 242, 0.98);
+			backdrop-filter: blur(10px);
+			-webkit-backdrop-filter: blur(10px);
 			flex-direction: column;
-			padding: var(--space-md);
-			gap: var(--space-sm);
+			padding: var(--space-md) var(--space-lg);
+			gap: 0;
 			border-bottom: 1px solid var(--border);
-			box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+			box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+			opacity: 0;
+			transform: translateY(-10px);
+			pointer-events: none;
+			transition: opacity 0.25s ease, transform 0.25s ease;
 		}
 
 		.nav-links.open {
-			display: flex;
+			opacity: 1;
+			transform: translateY(0);
+			pointer-events: auto;
 		}
 
 		.nav-links a {
-			padding: 0.75rem 0;
+			padding: 1rem 0;
 			width: 100%;
+			font-size: 1rem;
+			border-bottom: 1px solid var(--border);
+		}
+
+		.nav-links a:last-child {
+			border-bottom: none;
+		}
+
+		.nav-links a::after {
+			display: none;
 		}
 
 		.nav-cta {
 			width: 100%;
 			text-align: center;
-			margin-top: var(--space-xs);
+			margin-top: var(--space-sm);
+			border-bottom: none !important;
 		}
 
 		.mobile-toggle {
 			display: flex;
+			width: 44px;
+			height: 44px;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.mobile-toggle span {
+			transition: all 0.3s ease;
+		}
+
+		.mobile-toggle.active span:first-child {
+			transform: rotate(45deg) translate(3px, 3px);
+		}
+
+		.mobile-toggle.active span:last-child {
+			transform: rotate(-45deg) translate(3px, -3px);
 		}
 	}
 </style>
@@ -189,12 +230,22 @@ const isHome = pathname === '/';
 
 	toggle?.addEventListener('click', () => {
 		navLinks?.classList.toggle('open');
+		toggle.classList.toggle('active');
 	});
 
 	// Close menu when clicking a link
 	navLinks?.querySelectorAll('a').forEach(link => {
 		link.addEventListener('click', () => {
 			navLinks.classList.remove('open');
+			toggle?.classList.remove('active');
 		});
+	});
+
+	// Close menu when clicking outside
+	document.addEventListener('click', (e) => {
+		if (!toggle?.contains(e.target as Node) && !navLinks?.contains(e.target as Node)) {
+			navLinks?.classList.remove('open');
+			toggle?.classList.remove('active');
+		}
 	});
 </script>

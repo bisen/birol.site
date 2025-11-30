@@ -32,9 +32,10 @@
 	const bgG = 247/255;
 	const bgB = 242/255;
 
-	// Particle system constants
-	const PARTICLE_COUNT = 672;
-	const BASE_THICKNESS = 0.00468;
+	// Particle system constants - adjusted for mobile
+	const isMobile = window.matchMedia('(max-width: 768px)').matches;
+	const PARTICLE_COUNT = isMobile ? 252 : 672;
+	const BASE_THICKNESS = isMobile ? 0.008775 : 0.00468;
 
 	// Shared state for mouse (used by both WebGPU and WebGL)
 	let width = 0;
