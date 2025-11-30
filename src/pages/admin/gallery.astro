@@ -936,15 +936,16 @@ import { SITE_TITLE } from '../../consts';
 				const ctx = canvas.getContext('2d')!;
 				ctx.drawImage(img, 0, 0, width, height);
 
-				// Convert to blob
+				// Convert to WebP
 				canvas.toBlob((blob) => {
 					if (blob) {
-						const resizedFile = new File([blob], file.name, { type: 'image/jpeg' });
+						const newName = file.name.replace(/\.[^.]+$/, '.webp');
+						const resizedFile = new File([blob], newName, { type: 'image/webp' });
 						resolve(resizedFile);
 					} else {
 						resolve(file);
 					}
-				}, 'image/jpeg', 0.9);
+				}, 'image/webp', 0.85);
 			};
 			img.src = URL.createObjectURL(file);
 		});
