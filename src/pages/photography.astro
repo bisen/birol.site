@@ -453,6 +453,29 @@ import { SITE_TITLE } from '../consts';
 		});
 	}
 
+	async function renderImageToCanvasFit(canvas: HTMLCanvasElement, url: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			const img = new Image();
+			img.crossOrigin = 'anonymous';
+			img.onload = () => {
+				const maxWidth = window.innerWidth - 160;
+				const maxHeight = window.innerHeight - 200;
+				let width = img.naturalWidth;
+				let height = img.naturalHeight;
+				const ratio = Math.min(maxWidth / width, maxHeight / height, 1);
+				width = Math.floor(width * ratio);
+				height = Math.floor(height * ratio);
+				canvas.width = width;
+				canvas.height = height;
+				const ctx = canvas.getContext('2d');
+				if (ctx) ctx.drawImage(img, 0, 0, width, height);
+				resolve();
+			};
+			img.onerror = reject;
+			img.src = url;
+		});
+	}
+
 	async function fetchItems() {
 		try {
 			const res = await fetch('/api/gallery?collection=photography');
@@ -541,7 +564,7 @@ import { SITE_TITLE } from '../consts';
 
 	async function updateLightboxImage() {
 		const item = items[currentIndex];
-		await renderImageToCanvas(lightboxCanvas, `/api/gallery/${item.id}/image`);
+		await renderImageToCanvasFit(lightboxCanvas, `/api/gallery/${item.id}/image`);
 		lightboxTitle.textContent = item.title;
 		lightboxNotes.textContent = item.notes || '';
 		currentIndexEl.textContent = String(currentIndex + 1);
