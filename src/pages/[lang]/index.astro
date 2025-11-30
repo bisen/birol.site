@@ -1,0 +1,820 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import HeroCanvas from '../../components/HeroCanvas.astro';
+import { getCollection } from 'astro:content';
+import { languages, useTranslations, formatDate, type Lang } from '../../i18n';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+	return Object.keys(languages).map((lang) => ({
+		params: { lang },
+	}));
+}
+
+const { lang } = Astro.params as { lang: Lang };
+const t = useTranslations(lang);
+
+const posts = (await getCollection('blog')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+).slice(0, 3);
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={t('site.title')} description={t('site.description')} />
+	</head>
+	<body>
+		<Header lang={lang} />
+		<main>
+			<!-- Hero Section -->
+			<section class="hero">
+				<HeroCanvas />
+				<div class="container hero-container">
+					<div class="hero-intro">
+						<span class="hero-greeting">{t('hero.greeting')}</span>
+						<h1 class="hero-name">Birol<br/>Senturk</h1>
+						<div class="hero-title-line">
+							<span class="hero-dash"></span>
+							<span class="hero-title">{t('hero.title')}</span>
+						</div>
+					</div>
+					<div class="hero-text">
+						<p class="hero-desc">
+							{t('hero.description')}
+						</p>
+						<div class="hero-actions">
+							<a href="#contact" class="btn btn--primary">{t('hero.cta.contact')}</a>
+							<a href="#work" class="btn btn--outline">{t('hero.cta.work')}</a>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Services Section -->
+			<section class="services" id="services">
+				<div class="container">
+					<span class="section-label">{t('services.label')}</span>
+					<h2>{t('services.title')}</h2>
+					<div class="services-grid">
+						<div class="service-card">
+							<div class="service-number">01</div>
+							<h3>{t('services.web.title')}</h3>
+							<p>{t('services.web.description')}</p>
+						</div>
+						<div class="service-card">
+							<div class="service-number">02</div>
+							<h3>{t('services.ai.title')}</h3>
+							<p>{t('services.ai.description')}</p>
+						</div>
+						<div class="service-card">
+							<div class="service-number">03</div>
+							<h3>{t('services.consulting.title')}</h3>
+							<p>{t('services.consulting.description')}</p>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<!-- Work Section -->
+			<section class="work" id="work">
+				<div class="container">
+					<span class="section-label">{t('work.label')}</span>
+					<h2>{t('work.title')}</h2>
+					<div class="projects-list">
+						<a href="https://4xdigital.ai" target="_blank" class="project-card">
+							<div class="project-info">
+								<span class="project-tag">{t('work.tag.active')}</span>
+								<h3>4XDigital.ai</h3>
+								<p>{t('work.4xdigital.description')}</p>
+							</div>
+							<div class="project-arrow">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M7 17L17 7M17 7H7M17 7V17"/>
+								</svg>
+							</div>
+						</a>
+						<a href="https://sevkio.com" target="_blank" class="project-card">
+							<div class="project-info">
+								<span class="project-tag">{t('work.tag.development')}</span>
+								<h3>Sevkio</h3>
+								<p>{t('work.sevkio.description')}</p>
+							</div>
+							<div class="project-arrow">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M7 17L17 7M17 7H7M17 7V17"/>
+								</svg>
+							</div>
+						</a>
+						<a href="https://forgekit.org" target="_blank" class="project-card">
+							<div class="project-info">
+								<span class="project-tag">{t('work.tag.development')}</span>
+								<h3>ForgeKit</h3>
+								<p>{t('work.forgekit.description')}</p>
+							</div>
+							<div class="project-arrow">
+								<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M7 17L17 7M17 7H7M17 7V17"/>
+								</svg>
+							</div>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			<!-- Blog Section -->
+			<section class="blog" id="blog">
+				<div class="container">
+					<div class="blog-header">
+						<div>
+							<span class="section-label">{t('blog.label')}</span>
+							<h2>{t('blog.title')}</h2>
+						</div>
+						<a href={`/${lang}/blog`} class="btn btn--outline">{t('blog.allPosts')}</a>
+					</div>
+					{posts.length > 0 ? (
+						<div class="blog-grid">
+							{posts.map((post) => (
+								<a href={`/${lang}/blog/${post.id}/`} class="blog-card">
+									<time datetime={post.data.pubDate.toISOString()}>
+										{formatDate(post.data.pubDate, lang)}
+									</time>
+									<h3>{post.data.title}</h3>
+									<p>{post.data.description}</p>
+								</a>
+							))}
+						</div>
+					) : (
+						<p class="text-muted">{t('blog.comingSoon')}</p>
+					)}
+				</div>
+			</section>
+
+			<!-- Creative Section -->
+			<section class="creative" id="creative">
+				<div class="container">
+					<span class="section-label">{t('creative.label')}</span>
+					<h2>{t('creative.title')}</h2>
+					<p class="creative-intro">{t('creative.intro')}</p>
+					<div class="creative-grid">
+						<a href={`/${lang}/photography`} class="creative-card">
+							<div class="creative-icon">
+								<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+									<rect x="2" y="6" width="20" height="14" rx="2"/>
+									<circle cx="12" cy="13" r="4"/>
+									<path d="M6 6V4h4"/>
+								</svg>
+							</div>
+							<h3>{t('creative.photography.title')}</h3>
+							<p>{t('creative.photography.description')}</p>
+						</a>
+						<a href={`/${lang}/art`} class="creative-card">
+							<div class="creative-icon">
+								<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+									<path d="M12 2L2 7l10 5 10-5-10-5z"/>
+									<path d="M2 17l10 5 10-5"/>
+									<path d="M2 12l10 5 10-5"/>
+								</svg>
+							</div>
+							<h3>{t('creative.art.title')}</h3>
+							<p>{t('creative.art.description')}</p>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			<!-- Contact Section -->
+			<section class="contact" id="contact">
+				<div class="container">
+					<div class="contact-content">
+						<div class="contact-info">
+							<span class="section-label">{t('contact.label')}</span>
+							<h2>{t('contact.title')}</h2>
+							<p>{t('contact.description')}</p>
+							<div class="contact-links">
+								<a href="mailto:birolsenturk@outlook.com" class="contact-link">
+									<span class="contact-link-label">{t('contact.email')}</span>
+									<span class="contact-link-value">birolsenturk@outlook.com</span>
+								</a>
+								<a href="https://www.linkedin.com/in/birolsenturk" target="_blank" class="contact-link">
+									<span class="contact-link-label">{t('contact.linkedin')}</span>
+									<span class="contact-link-value">birolsenturk</span>
+								</a>
+								<a href="https://github.com/bisen" target="_blank" class="contact-link">
+									<span class="contact-link-label">{t('contact.github')}</span>
+									<span class="contact-link-value">bisen</span>
+								</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+		</main>
+		<Footer lang={lang} />
+	</body>
+</html>
+
+<style>
+	/* Hero Section */
+	.hero {
+		position: relative;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		border-bottom: none;
+		overflow: hidden;
+	}
+
+	.hero-container {
+		position: relative;
+		z-index: 1;
+		padding: var(--space-xl) 0;
+		display: grid;
+		grid-template-columns: 1.2fr 1fr;
+		gap: var(--space-lg);
+		align-items: center;
+	}
+
+	/* Hero Introduction - Name Block */
+	.hero-intro {
+		position: relative;
+	}
+
+	/* Blurred light backdrop behind text to lighten particles */
+	.hero-intro::before,
+	.hero-text::before {
+		content: '';
+		position: absolute;
+		inset: -60px;
+		background: rgba(255, 255, 255, 0.85);
+		filter: blur(50px);
+		z-index: -1;
+		pointer-events: none;
+		mix-blend-mode: lighten;
+	}
+
+	.hero-greeting {
+		display: block;
+		font-family: var(--font-body);
+		font-size: 1.125rem;
+		font-weight: 500;
+		color: var(--accent);
+		letter-spacing: 0.05em;
+		margin-bottom: var(--space-xs);
+		opacity: 0;
+		animation: fadeSlideUp 0.6s ease forwards;
+		animation-delay: 0.2s;
+	}
+
+	.hero-name {
+		font-family: var(--font-display);
+		font-size: clamp(4.5rem, 12vw, 9rem);
+		font-weight: 800;
+		line-height: 0.9;
+		letter-spacing: -0.04em;
+		color: var(--ink);
+		margin: 0;
+		position: relative;
+		opacity: 0;
+		animation: fadeSlideUp 0.8s ease forwards;
+		animation-delay: 0.4s;
+	}
+
+	.hero-name::after {
+		content: '';
+		position: absolute;
+		bottom: -0.15em;
+		left: 0;
+		width: 1.5em;
+		height: 6px;
+		background: var(--accent);
+		opacity: 0;
+		animation: expandWidth 0.5s ease forwards;
+		animation-delay: 1s;
+	}
+
+	.hero-title-line {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		margin-top: var(--space-md);
+		opacity: 0;
+		animation: fadeSlideUp 0.6s ease forwards;
+		animation-delay: 0.8s;
+	}
+
+	.hero-dash {
+		width: 40px;
+		height: 2px;
+		background: var(--accent);
+	}
+
+	.hero-title {
+		font-family: var(--font-display);
+		font-size: 0.875rem;
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--ink-muted);
+	}
+
+	/* Hero Text Block */
+	.hero-text {
+		position: relative;
+		max-width: 420px;
+		opacity: 0;
+		animation: fadeSlideUp 0.6s ease forwards;
+		animation-delay: 1s;
+	}
+
+	.hero-desc {
+		font-size: 1.1875rem;
+		line-height: 1.7;
+		color: var(--text-muted);
+		margin-bottom: var(--space-md);
+	}
+
+	.hero-actions {
+		display: flex;
+		gap: var(--space-sm);
+		flex-wrap: wrap;
+	}
+
+	/* Hero Animations */
+	@keyframes fadeSlideUp {
+		from {
+			opacity: 0;
+			transform: translateY(30px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes expandWidth {
+		from {
+			opacity: 0;
+			width: 0;
+		}
+		to {
+			opacity: 1;
+			width: 1.5em;
+		}
+	}
+
+	/* Services Section */
+	.services-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--space-md);
+		margin-top: var(--space-lg);
+	}
+
+	.service-card {
+		padding: var(--space-md);
+		background: var(--cream-dark);
+		transition: transform 0.3s ease;
+	}
+
+	.service-card:hover {
+		transform: translateY(-4px);
+	}
+
+	.service-number {
+		font-family: var(--font-display);
+		font-size: 0.875rem;
+		font-weight: 700;
+		color: var(--accent);
+		margin-bottom: var(--space-sm);
+	}
+
+	.service-card h3 {
+		margin-bottom: 0.75rem;
+	}
+
+	.service-card p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+	}
+
+	/* Work Section */
+	.projects-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1px;
+		background: var(--border);
+		margin-top: var(--space-lg);
+	}
+
+	.project-card {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: var(--space-md);
+		background: var(--cream);
+		text-decoration: none;
+		transition: all 0.3s ease;
+	}
+
+	.project-card:hover {
+		background: var(--cream-dark);
+		padding-left: calc(var(--space-md) + 8px);
+	}
+
+	.project-tag {
+		font-family: var(--font-display);
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--accent);
+		display: block;
+		margin-bottom: 0.5rem;
+	}
+
+	.project-info h3 {
+		color: var(--ink);
+		margin-bottom: 0.5rem;
+		transition: color 0.3s ease;
+	}
+
+	.project-card:hover .project-info h3 {
+		color: var(--accent);
+	}
+
+	.project-info p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+		max-width: 500px;
+	}
+
+	.project-arrow {
+		color: var(--gray-400);
+		transition: all 0.3s ease;
+	}
+
+	.project-card:hover .project-arrow {
+		color: var(--accent);
+		transform: translate(4px, -4px);
+	}
+
+	/* Blog Section */
+	.blog-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-end;
+		margin-bottom: var(--space-lg);
+	}
+
+	.blog-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: var(--space-md);
+	}
+
+	.blog-card {
+		padding: var(--space-md);
+		background: var(--cream-dark);
+		text-decoration: none;
+		transition: transform 0.3s ease;
+		display: block;
+	}
+
+	.blog-card:hover {
+		transform: translateY(-4px);
+	}
+
+	.blog-card time {
+		font-family: var(--font-display);
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--accent);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.blog-card h3 {
+		color: var(--ink);
+		margin: 0.75rem 0;
+		font-size: 1.25rem;
+		transition: color 0.3s ease;
+	}
+
+	.blog-card:hover h3 {
+		color: var(--accent);
+	}
+
+	.blog-card p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+	}
+
+	/* Creative Section */
+	.creative-intro {
+		color: var(--text-muted);
+		max-width: 500px;
+		margin-bottom: var(--space-lg);
+	}
+
+	.creative-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: var(--space-md);
+	}
+
+	.creative-card {
+		padding: var(--space-lg);
+		background: var(--cream-dark);
+		text-decoration: none;
+		transition: all 0.3s ease;
+		text-align: center;
+	}
+
+	.creative-card:hover {
+		background: var(--ink);
+	}
+
+	.creative-icon {
+		color: var(--accent);
+		margin-bottom: var(--space-sm);
+		transition: color 0.3s ease;
+	}
+
+	.creative-card:hover .creative-icon {
+		color: var(--accent-light);
+	}
+
+	.creative-card h3 {
+		color: var(--ink);
+		margin-bottom: 0.5rem;
+		transition: color 0.3s ease;
+	}
+
+	.creative-card:hover h3 {
+		color: var(--cream);
+	}
+
+	.creative-card p {
+		color: var(--text-muted);
+		font-size: 0.9375rem;
+		margin: 0;
+		transition: color 0.3s ease;
+	}
+
+	.creative-card:hover p {
+		color: var(--gray-400);
+	}
+
+	/* Contact Section */
+	.contact {
+		background: var(--ink);
+		color: var(--cream);
+	}
+
+	.contact .section-label {
+		color: var(--accent-light);
+	}
+
+	.contact h2 {
+		color: var(--cream);
+	}
+
+	.contact p {
+		color: var(--gray-400);
+		max-width: 500px;
+		margin-bottom: var(--space-lg);
+	}
+
+	.contact-links {
+		display: flex;
+		flex-direction: column;
+		gap: var(--space-sm);
+	}
+
+	.contact-link {
+		display: flex;
+		flex-direction: column;
+		padding: var(--space-sm) 0;
+		border-bottom: 1px solid rgba(255,255,255,0.1);
+		text-decoration: none;
+		transition: all 0.3s ease;
+	}
+
+	.contact-link:hover {
+		padding-left: 8px;
+	}
+
+	.contact-link-label {
+		font-family: var(--font-display);
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--accent-light);
+	}
+
+	.contact-link-value {
+		font-size: 1.125rem;
+		color: var(--cream);
+		transition: color 0.3s ease;
+	}
+
+	.contact-link:hover .contact-link-value {
+		color: var(--accent-light);
+	}
+
+	/* Responsive - Tablet */
+	@media (max-width: 968px) {
+		.services-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.blog-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.creative-grid {
+			grid-template-columns: 1fr;
+		}
+
+		.hero-container {
+			grid-template-columns: 1fr;
+			gap: var(--space-md);
+		}
+
+		.hero-name {
+			font-size: clamp(3.5rem, 15vw, 6rem);
+		}
+	}
+
+	/* Responsive - Mobile */
+	@media (max-width: 768px) {
+		.hero {
+			min-height: 100svh;
+			padding-top: 0;
+			padding-bottom: 0;
+			display: flex;
+			align-items: center;
+		}
+
+		.hero-container {
+			padding-top: var(--space-md);
+			padding-bottom: var(--space-lg);
+		}
+
+		/* Reduce blur for mobile performance */
+		.hero-intro::before,
+		.hero-text::before {
+			filter: blur(30px);
+			inset: -40px;
+		}
+
+		.hero-intro {
+			text-align: center;
+		}
+
+		.hero-greeting {
+			font-size: 1rem;
+		}
+
+		.hero-name {
+			font-size: clamp(2.75rem, 16vw, 4.5rem);
+			line-height: 0.95;
+		}
+
+		.hero-name::after {
+			left: 50%;
+			transform: translateX(-50%);
+			height: 4px;
+		}
+
+		.hero-title-line {
+			justify-content: center;
+			margin-top: var(--space-sm);
+		}
+
+		.hero-dash {
+			width: 28px;
+		}
+
+		.hero-title {
+			font-size: 0.6875rem;
+			letter-spacing: 0.1em;
+		}
+
+		.hero-text {
+			text-align: center;
+			max-width: 100%;
+		}
+
+		.hero-desc {
+			font-size: 1rem;
+			line-height: 1.6;
+			margin-left: auto;
+			margin-right: auto;
+			margin-bottom: var(--space-md);
+		}
+
+		.hero-actions {
+			justify-content: center;
+			gap: var(--space-xs);
+		}
+
+		.hero-actions .btn {
+			padding: 0.875rem 1.5rem;
+			font-size: 0.75rem;
+		}
+
+		/* Services mobile */
+		.service-card {
+			padding: var(--space-sm) var(--space-md);
+		}
+
+		.service-card h3 {
+			font-size: 1.125rem;
+		}
+
+		/* Projects mobile */
+		.project-card {
+			padding: var(--space-sm) var(--space-md);
+		}
+
+		.project-info h3 {
+			font-size: 1.125rem;
+		}
+
+		.project-info p {
+			display: none;
+		}
+
+		/* Blog mobile */
+		.blog-header {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-sm);
+		}
+
+		.blog-card {
+			padding: var(--space-sm) var(--space-md);
+		}
+
+		.blog-card h3 {
+			font-size: 1.125rem;
+			margin: 0.5rem 0;
+		}
+
+		/* Creative mobile */
+		.creative-card {
+			padding: var(--space-md);
+		}
+
+		.creative-card h3 {
+			font-size: 1.125rem;
+		}
+
+		/* Contact mobile */
+		.contact-link-value {
+			font-size: 1rem;
+			word-break: break-all;
+		}
+
+		/* Section spacing mobile */
+		section {
+			padding-top: var(--space-lg);
+			padding-bottom: var(--space-lg);
+		}
+
+		h2 {
+			font-size: 2rem;
+		}
+	}
+
+	/* Small mobile */
+	@media (max-width: 400px) {
+		.hero-name {
+			font-size: 2.5rem;
+		}
+
+		.hero-actions {
+			flex-direction: column;
+			width: 100%;
+			padding: 0 var(--space-md);
+		}
+
+		.hero-actions .btn {
+			width: 100%;
+			text-align: center;
+		}
+
+		.hero-title {
+			font-size: 0.625rem;
+		}
+	}
+</style>

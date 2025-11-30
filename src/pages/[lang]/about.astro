@@ -1,0 +1,82 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { languages, useTranslations, type Lang } from '../../i18n';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+	return Object.keys(languages).map((lang) => ({
+		params: { lang },
+	}));
+}
+
+const { lang } = Astro.params as { lang: Lang };
+const t = useTranslations(lang);
+---
+
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${t('about.title')} - ${t('site.title')}`} description={t('about.description')} />
+	</head>
+
+	<body>
+		<Header lang={lang} />
+		<main>
+			<article>
+				<div class="article-container">
+					<header class="article-header">
+						<h1>{t('about.title')}</h1>
+					</header>
+					<div class="prose">
+						<p>{t('about.p1')}</p>
+						<p>{t('about.p2')}</p>
+						<p>{t('about.p3')}</p>
+					</div>
+				</div>
+			</article>
+		</main>
+		<Footer lang={lang} />
+	</body>
+</html>
+
+<style>
+	article {
+		padding-bottom: var(--space-xl);
+	}
+
+	.article-container {
+		max-width: 720px;
+		margin: 0 auto;
+		padding: 0 var(--space-md);
+	}
+
+	.article-header {
+		padding: var(--space-lg) 0;
+		border-bottom: 1px solid var(--border);
+		margin-bottom: var(--space-lg);
+	}
+
+	.article-header h1 {
+		font-size: clamp(2rem, 5vw, 3rem);
+		line-height: 1.15;
+		margin: 0;
+	}
+
+	.prose {
+		font-size: 1.0625rem;
+		line-height: 1.8;
+		color: var(--text);
+	}
+
+	.prose p {
+		margin-bottom: var(--space-md);
+	}
+
+	@media (max-width: 768px) {
+		.article-header {
+			padding: var(--space-md) 0;
+		}
+	}
+</style>

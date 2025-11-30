@@ -1,30 +1,40 @@
 ---
-import { SITE_TITLE } from '../consts';
+import { useTranslations, type Lang } from '../i18n';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
 
 const pathname = Astro.url.pathname;
-const isHome = pathname === '/';
+const isHome = pathname === `/${lang}` || pathname === `/${lang}/`;
 ---
 
 <header>
 	<nav class="container">
-		<a href="/" class="logo">{SITE_TITLE}</a>
+		<a href={`/${lang}`} class="logo">{t('site.title')}</a>
 		<div class="nav-links">
 			{isHome ? (
 				<>
-					<a href="#services">Services</a>
-					<a href="#work">Work</a>
-					<a href="/blog">Blog</a>
-					<a href="#creative">Creative</a>
-					<a href="#contact" class="nav-cta">Contact</a>
+					<a href="#services">{t('nav.services')}</a>
+					<a href="#work">{t('nav.work')}</a>
+					<a href={`/${lang}/blog`}>{t('nav.blog')}</a>
+					<a href="#creative">{t('nav.creative')}</a>
+					<LanguageSwitcher lang={lang} />
+					<a href="#contact" class="nav-cta">{t('nav.contact')}</a>
 				</>
 			) : (
 				<>
-					<a href="/#services">Services</a>
-					<a href="/#work">Work</a>
-					<a href="/blog" class:list={[{ active: pathname.startsWith('/blog') }]}>Blog</a>
-					<a href="/photography" class:list={[{ active: pathname === '/photography' }]}>Photography</a>
-					<a href="/art" class:list={[{ active: pathname === '/art' }]}>Art</a>
-					<a href="/#contact" class="nav-cta">Contact</a>
+					<a href={`/${lang}#services`}>{t('nav.services')}</a>
+					<a href={`/${lang}#work`}>{t('nav.work')}</a>
+					<a href={`/${lang}/blog`} class:list={[{ active: pathname.includes('/blog') }]}>{t('nav.blog')}</a>
+					<a href={`/${lang}/photography`} class:list={[{ active: pathname.includes('/photography') }]}>{t('nav.photography')}</a>
+					<a href={`/${lang}/art`} class:list={[{ active: pathname.includes('/art') }]}>{t('nav.art')}</a>
+					<LanguageSwitcher lang={lang} />
+					<a href={`/${lang}#contact`} class="nav-cta">{t('nav.contact')}</a>
 				</>
 			)}
 		</div>

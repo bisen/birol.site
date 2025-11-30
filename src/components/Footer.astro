@@ -1,4 +1,12 @@
 ---
+import { useTranslations, type Lang } from '../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const t = useTranslations(lang);
 const today = new Date();
 ---
 
@@ -6,7 +14,7 @@ const today = new Date();
 	<div class="container">
 		<div class="footer-content">
 			<div class="footer-brand">
-				<p class="footer-tagline">Building digital products that matter.</p>
+				<p class="footer-tagline">{t('footer.tagline')}</p>
 			</div>
 			<div class="footer-links">
 				<a href="https://twitter.com/senturkbirol" target="_blank" rel="noopener">Twitter</a>

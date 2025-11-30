@@ -13,5 +13,13 @@ export default defineConfig({
 		platformProxy: {
 			enabled: true
 		}
-	})
+	}),
+	i18n: {
+		defaultLocale: 'en',
+		locales: ['en', 'tr'],
+		routing: {
+			prefixDefaultLocale: true,
+			redirectToDefaultLocale: false
+		}
+	}
 });

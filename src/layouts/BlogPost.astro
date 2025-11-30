@@ -4,19 +4,20 @@ import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { Image } from 'astro:assets';
+import { formatDate, type Lang } from '../i18n';
 
-type Props = CollectionEntry<'blog'>['data'];
+type Props = CollectionEntry<'blog'>['data'] & { lang: Lang };
 
-const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
+const { title, description, pubDate, updatedDate, heroImage, lang } = Astro.props;
 ---
 
-<html lang="en">
+<html lang={lang}>
 	<head>
 		<BaseHead title={title} description={description} />
 	</head>
 
 	<body>
-		<Header />
+		<Header lang={lang} />
 		<main>
 			<article>
 				{heroImage && (
@@ -28,11 +29,11 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 					<header class="article-header">
 						<div class="article-meta">
 							<time datetime={pubDate.toISOString()}>
-								{pubDate.toLocaleDateString('en-us', { year: 'numeric', month: 'long', day: 'numeric' })}
+								{formatDate(pubDate, lang)}
 							</time>
 							{updatedDate && (
 								<span class="updated">
-									Updated {updatedDate.toLocaleDateString('en-us', { year: 'numeric', month: 'long', day: 'numeric' })}
+									Updated {formatDate(updatedDate, lang)}
 								</span>
 							)}
 						</div>
@@ -44,7 +45,7 @@ const { title, description, pubDate, updatedDate, heroImage } = Astro.props;
 				</div>
 			</article>
 		</main>
-		<Footer />
+		<Footer lang={lang} />
 	</body>
 </html>
 
