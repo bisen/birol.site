@@ -1,6 +1,7 @@
 name = "birol-site"
 compatibility_date = "2025-01-08"
 main = "./dist/_worker.js/index.js"
+compatibility_flags = ["nodejs_compat"]
 
 [assets]
 directory = "./dist"
