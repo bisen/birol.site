@@ -3,7 +3,7 @@ import type { APIRoute } from 'astro';
 export const POST: APIRoute = async ({ request, locals }) => {
 	try {
 		const { password } = await request.json();
-		const adminPassword = locals.runtime.env.ADMIN_PASSWORD;
+		const adminPassword = await locals.runtime.env.ADMIN_PASSWORD?.get();
 
 		if (!adminPassword) {
 			return new Response(JSON.stringify({ error: 'Admin not configured' }), {

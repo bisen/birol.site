@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "mcp__browsermcp__browser_press_key",
+      "mcp__browsermcp__browser_screenshot",
+      "Skill(frontend-design:frontend-design)"
     ],
     "deny": [],
     "ask": []

@@ -4,11 +4,11 @@ import { verifyToken } from './auth';
 export const POST: APIRoute = async ({ request, locals }) => {
 	try {
 		const bucket = locals.runtime.env.GALLERY_BUCKET;
-		const adminPassword = locals.runtime.env.ADMIN_PASSWORD;
+		const adminPassword = await locals.runtime.env.ADMIN_PASSWORD?.get();
 
 		// Verify auth
 		const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-		if (!verifyToken(token, adminPassword)) {
+		if (!adminPassword || !verifyToken(token, adminPassword)) {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: { 'Content-Type': 'application/json' }
