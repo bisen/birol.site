@@ -9,3 +9,7 @@ directory = "./dist"
 [[r2_buckets]]
 binding = "GALLERY_BUCKET"
 bucket_name = "gallery-images"
+
+secrets_store_secrets = [
+  { binding = "ADMIN_PASSWORD", store_id = "4370508a5185475d83f789521a8ad712", secret_name = "ADMIN_PASSWORD" }
+]
