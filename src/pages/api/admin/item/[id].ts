@@ -9,7 +9,7 @@ export const GET: APIRoute = async ({ params, request, locals }) => {
 		const id = params.id;
 
 		const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-		if (!adminPassword || !verifyToken(token, adminPassword)) {
+		if (!verifyToken(token, adminPassword)) {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: { 'Content-Type': 'application/json' }
@@ -53,7 +53,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 		const id = params.id;
 
 		const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-		if (!adminPassword || !verifyToken(token, adminPassword)) {
+		if (!verifyToken(token, adminPassword)) {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: { 'Content-Type': 'application/json' }
@@ -116,7 +116,7 @@ export const DELETE: APIRoute = async ({ params, request, locals }) => {
 		const id = params.id;
 
 		const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-		if (!adminPassword || !verifyToken(token, adminPassword)) {
+		if (!verifyToken(token, adminPassword)) {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: { 'Content-Type': 'application/json' }

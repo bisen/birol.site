@@ -8,7 +8,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 		// Verify auth
 		const token = request.headers.get('Authorization')?.replace('Bearer ', '');
-		if (!adminPassword || !verifyToken(token, adminPassword)) {
+		if (!verifyToken(token, adminPassword)) {
 			return new Response(JSON.stringify({ error: 'Unauthorized' }), {
 				status: 401,
 				headers: { 'Content-Type': 'application/json' }

@@ -35,7 +35,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 };
 
 // Helper to verify token in other endpoints
-export function verifyToken(token: string | null, adminPassword: string): boolean {
+export function verifyToken(token: string | null, adminPassword: string | undefined): boolean {
 	if (!token || !adminPassword) return false;
 
 	try {
