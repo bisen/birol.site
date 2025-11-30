@@ -600,9 +600,13 @@ const posts = (await getCollection('blog')).sort(
 	.creative-image {
 		position: absolute;
 		inset: 0;
+		width: 100%;
+		height: 100%;
 	}
 
 	.creative-image img {
+		position: absolute;
+		inset: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: cover;
