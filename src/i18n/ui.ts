@@ -42,11 +42,27 @@ export const ui = {
 		// Work
 		'work.label': 'Selected Work',
 		'work.title': 'Projects',
+		'work.viewAll': 'View All Projects',
 		'work.tag.active': 'Active',
 		'work.tag.development': 'In Development',
+		'work.tag.saas': 'SaaS',
+		'work.tag.tool': 'Tool',
+		'work.tag.ai': 'AI',
+		'work.tag.logistics': 'Logistics',
+		'work.tag.marketing': 'Marketing',
+		'work.tag.branding': 'Branding',
 		'work.4xdigital.description': 'Making digital advertising accessible to small and medium businesses through AI-powered campaign management.',
 		'work.sevkio.description': 'Logistics management tool designed specifically for small businesses to streamline their shipping operations.',
 		'work.forgekit.description': 'LLM-powered personal branding toolkit helping professionals craft their digital presence.',
+
+		// Projects Page
+		'projects.title': 'Projects',
+		'projects.description': 'A collection of products and tools I\'ve built',
+		'projects.label': 'All Work',
+		'projects.intro': 'Products, tools, and experiments I\'ve built to solve real problems.',
+		'projects.visit': 'Visit Project',
+		'projects.count.singular': 'project',
+		'projects.count.plural': 'projects',
 
 		// Blog
 		'blog.label': 'Insights',
@@ -137,11 +153,27 @@ export const ui = {
 		// Work
 		'work.label': 'Seçili Projeler',
 		'work.title': 'Projeler',
+		'work.viewAll': 'Tüm Projeleri Gör',
 		'work.tag.active': 'Aktif',
 		'work.tag.development': 'Geliştiriliyor',
+		'work.tag.saas': 'SaaS',
+		'work.tag.tool': 'Araç',
+		'work.tag.ai': 'Yapay Zeka',
+		'work.tag.logistics': 'Lojistik',
+		'work.tag.marketing': 'Pazarlama',
+		'work.tag.branding': 'Markalaşma',
 		'work.4xdigital.description': 'Yapay zeka destekli kampanya yönetimi ile dijital reklamcılığı küçük ve orta ölçekli işletmeler için erişilebilir kılıyoruz.',
 		'work.sevkio.description': 'Küçük işletmelerin sevkiyat operasyonlarını kolaylaştırmak için özel olarak tasarlanmış lojistik yönetim aracı.',
 		'work.forgekit.description': 'Profesyonellerin dijital varlıklarını oluşturmalarına yardımcı olan LLM destekli kişisel marka araç seti.',
+
+		// Projects Page
+		'projects.title': 'Projeler',
+		'projects.description': 'Geliştirdiğim ürün ve araçlar koleksiyonu',
+		'projects.label': 'Tüm Çalışmalar',
+		'projects.intro': 'Gerçek problemleri çözmek için geliştirdiğim ürünler, araçlar ve deneyler.',
+		'projects.visit': 'Projeyi Ziyaret Et',
+		'projects.count.singular': 'proje',
+		'projects.count.plural': 'proje',
 
 		// Blog
 		'blog.label': 'Yazılar',

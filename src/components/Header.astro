@@ -29,7 +29,7 @@ const isHome = pathname === `/${lang}` || pathname === `/${lang}/`;
 			) : (
 				<>
 					<a href={`/${lang}#services`}>{t('nav.services')}</a>
-					<a href={`/${lang}#work`}>{t('nav.work')}</a>
+					<a href={`/${lang}/projects`} class:list={[{ active: pathname.includes('/projects') }]}>{t('nav.work')}</a>
 					<a href={`/${lang}/blog`} class:list={[{ active: pathname.includes('/blog') }]}>{t('nav.blog')}</a>
 					<a href={`/${lang}/photography`} class:list={[{ active: pathname.includes('/photography') }]}>{t('nav.photography')}</a>
 					<a href={`/${lang}/art`} class:list={[{ active: pathname.includes('/art') }]}>{t('nav.art')}</a>

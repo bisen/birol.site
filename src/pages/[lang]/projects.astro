@@ -1,0 +1,437 @@
+---
+import BaseHead from '../../components/BaseHead.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import { languages, useTranslations, type Lang } from '../../i18n';
+
+export const prerender = true;
+
+export function getStaticPaths() {
+	return Object.keys(languages).map((lang) => ({
+		params: { lang },
+	}));
+}
+
+const { lang } = Astro.params as { lang: Lang };
+const t = useTranslations(lang);
+
+// Projects data - could be moved to a content collection later
+const projects = [
+	{
+		id: 'sevkio',
+		name: 'Sevkio',
+		url: 'https://sevkio.com',
+		status: 'development',
+		categories: ['tool', 'logistics'],
+		image: '', // Add R2 URL here, e.g. 'https://your-r2.com/sevkio.png'
+		year: '2024',
+	},
+	{
+		id: 'forgekit',
+		name: 'ForgeKit',
+		url: 'https://forgekit.org',
+		status: 'development',
+		categories: ['ai', 'branding'],
+		image: '', // Add R2 URL here, e.g. 'https://your-r2.com/forgekit.png'
+		year: '2024',
+	},
+];
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${t('projects.title')} - ${t('site.title')}`} description={t('projects.description')} />
+	</head>
+	<body>
+		<Header lang={lang} />
+		<main>
+			<section class="projects-section">
+				<div class="container">
+					<header class="page-header">
+						<div class="header-content">
+							<span class="section-label">{t('projects.label')}</span>
+							<h1>{t('projects.title')}</h1>
+							<p class="page-intro">{t('projects.intro')}</p>
+						</div>
+						<span class="project-count">{projects.length} {projects.length === 1 ? t('projects.count.singular') : t('projects.count.plural')}</span>
+					</header>
+
+					<div class="projects-grid">
+						{projects.map((project, index) => (
+							<a href={project.url} target="_blank" class={`project-card ${index === 0 ? 'project-card--featured' : ''}`} style={`animation-delay: ${index * 0.1}s`}>
+								<div class="project-visual">
+									{project.image ? (
+										<img src={project.image} alt={project.name} class="project-screenshot" loading="lazy" />
+									) : (
+										<div class="project-placeholder">
+											<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+												<rect x="2" y="3" width="20" height="14" rx="2"/>
+												<path d="M8 21h8M12 17v4"/>
+											</svg>
+										</div>
+									)}
+									<div class="project-overlay"></div>
+								</div>
+								<div class="project-body">
+									<div class="project-meta">
+										<span class={`project-status ${project.status === 'active' ? 'project-status--active' : ''}`}>
+											{project.status === 'active' ? t('work.tag.active') : t('work.tag.development')}
+										</span>
+										<span class="project-year">{project.year}</span>
+									</div>
+									<h2>{project.name}</h2>
+									<p>{t(`work.${project.id}.description` as any)}</p>
+									<div class="project-footer">
+										<div class="project-tags">
+											{project.categories.map((cat) => (
+												<span class="project-category">{t(`work.tag.${cat}` as any)}</span>
+											))}
+										</div>
+										<span class="project-link">
+											{t('projects.visit')}
+											<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+												<path d="M7 17L17 7M17 7H7M17 7V17"/>
+											</svg>
+										</span>
+									</div>
+								</div>
+							</a>
+						))}
+					</div>
+				</div>
+			</section>
+		</main>
+		<Footer lang={lang} />
+	</body>
+</html>
+
+<style>
+	.projects-section {
+		padding: var(--space-md) 0 var(--space-xl);
+		min-height: 60vh;
+	}
+
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		padding-bottom: var(--space-md);
+		margin-bottom: var(--space-lg);
+		border-bottom: 1px solid var(--border);
+		flex-wrap: wrap;
+		gap: var(--space-md);
+	}
+
+	.header-content {
+		max-width: 600px;
+	}
+
+	.page-header h1 {
+		font-size: clamp(2.5rem, 6vw, 4rem);
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		margin: 0 0 var(--space-sm) 0;
+		line-height: 1;
+	}
+
+	.page-intro {
+		color: var(--text-muted);
+		font-size: 1.125rem;
+		line-height: 1.6;
+		margin: 0;
+	}
+
+	.project-count {
+		font-family: var(--font-display);
+		font-size: 0.75rem;
+		font-weight: 500;
+		color: var(--text-muted);
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		padding-top: 0.5rem;
+	}
+
+	/* Projects Grid */
+	.projects-grid {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: var(--space-lg);
+	}
+
+	.project-card {
+		display: flex;
+		flex-direction: column;
+		background: var(--cream-dark);
+		text-decoration: none;
+		overflow: hidden;
+		transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.4s ease;
+		opacity: 0;
+		animation: fadeSlideUp 0.6s ease forwards;
+	}
+
+	@keyframes fadeSlideUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.project-card--featured {
+		grid-column: span 2;
+		display: grid;
+		grid-template-columns: 1.3fr 1fr;
+	}
+
+	.project-card:hover {
+		transform: translateY(-8px);
+		box-shadow: 0 25px 50px -15px rgba(0, 0, 0, 0.2);
+	}
+
+	/* Project Visual */
+	.project-visual {
+		position: relative;
+		background: var(--ink);
+		min-height: 240px;
+		overflow: hidden;
+	}
+
+	.project-card--featured .project-visual {
+		min-height: 320px;
+	}
+
+	.project-screenshot {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.project-card:hover .project-screenshot {
+		transform: scale(1.05);
+	}
+
+	.project-placeholder {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: linear-gradient(135deg, var(--ink) 0%, #2a2a2a 100%);
+		color: var(--gray-500);
+		transition: color 0.3s ease;
+	}
+
+	.project-card:hover .project-placeholder {
+		color: var(--gray-400);
+	}
+
+	.project-overlay {
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 50%);
+		opacity: 0;
+		transition: opacity 0.4s ease;
+	}
+
+	.project-card:hover .project-overlay {
+		opacity: 1;
+	}
+
+	/* Project Body */
+	.project-body {
+		padding: var(--space-lg);
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+	}
+
+	.project-card--featured .project-body {
+		padding: var(--space-xl);
+		justify-content: center;
+	}
+
+	.project-meta {
+		display: flex;
+		align-items: center;
+		gap: var(--space-sm);
+		margin-bottom: var(--space-sm);
+	}
+
+	.project-status {
+		font-family: var(--font-display);
+		font-size: 0.6875rem;
+		font-weight: 600;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-muted);
+		padding: 0.25rem 0.75rem;
+		background: var(--cream);
+		border-radius: 2px;
+	}
+
+	.project-status--active {
+		color: var(--accent);
+		background: rgba(217, 93, 57, 0.1);
+	}
+
+	.project-year {
+		font-family: var(--font-display);
+		font-size: 0.6875rem;
+		font-weight: 500;
+		color: var(--gray-400);
+		letter-spacing: 0.05em;
+	}
+
+	.project-body h2 {
+		color: var(--ink);
+		margin-bottom: 0.75rem;
+		font-size: 1.5rem;
+		transition: color 0.3s ease;
+	}
+
+	.project-card--featured .project-body h2 {
+		font-size: 2rem;
+	}
+
+	.project-card:hover .project-body h2 {
+		color: var(--accent);
+	}
+
+	.project-body p {
+		color: var(--text-muted);
+		font-size: 1rem;
+		margin: 0;
+		line-height: 1.7;
+		flex: 1;
+	}
+
+	.project-footer {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-top: var(--space-md);
+		padding-top: var(--space-md);
+		border-top: 1px solid var(--border);
+	}
+
+	.project-tags {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.project-category {
+		font-family: var(--font-display);
+		font-size: 0.6875rem;
+		font-weight: 500;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--gray-500);
+		padding: 0.25rem 0.5rem;
+		background: rgba(0, 0, 0, 0.04);
+		border-radius: 2px;
+	}
+
+	.project-link {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		font-family: var(--font-display);
+		font-size: 0.8125rem;
+		font-weight: 600;
+		color: var(--accent);
+		transition: gap 0.3s ease;
+		white-space: nowrap;
+	}
+
+	.project-card:hover .project-link {
+		gap: 0.75rem;
+	}
+
+	.project-link svg {
+		transition: transform 0.3s ease;
+	}
+
+	.project-card:hover .project-link svg {
+		transform: translate(2px, -2px);
+	}
+
+	/* Responsive - Tablet */
+	@media (max-width: 968px) {
+		.projects-grid {
+			grid-template-columns: 1fr;
+			gap: var(--space-md);
+		}
+
+		.project-card--featured {
+			grid-column: span 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.project-card--featured .project-visual {
+			min-height: 220px;
+			padding: var(--space-lg);
+		}
+
+		.project-card--featured .project-body {
+			padding: var(--space-lg);
+		}
+
+		.project-card--featured .project-body h2 {
+			font-size: 1.5rem;
+		}
+	}
+
+	/* Responsive - Mobile */
+	@media (max-width: 600px) {
+		.page-header {
+			flex-direction: column;
+			align-items: flex-start;
+		}
+
+		.project-count {
+			padding-top: 0;
+		}
+
+		.project-visual {
+			min-height: 180px;
+			padding: var(--space-md);
+		}
+
+		.project-mockup {
+			max-width: 280px;
+		}
+
+		.project-body {
+			padding: var(--space-md);
+		}
+
+		.project-body h2 {
+			font-size: 1.25rem;
+		}
+
+		.project-body p {
+			font-size: 0.9375rem;
+		}
+
+		.project-footer {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: var(--space-sm);
+		}
+
+		.project-tags {
+			order: 2;
+		}
+
+		.project-link {
+			order: 1;
+		}
+	}
+</style>
