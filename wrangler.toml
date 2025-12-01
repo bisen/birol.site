@@ -13,3 +13,7 @@ directory = "./dist"
 binding = "GALLERY_BUCKET"
 bucket_name = "gallery-images"
 
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "birol-site"
+

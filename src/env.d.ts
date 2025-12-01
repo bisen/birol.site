@@ -4,6 +4,7 @@ type Runtime = import('@astrojs/cloudflare').Runtime<Env>;
 
 interface Env {
 	GALLERY_BUCKET: R2Bucket;
+	ASSETS_BUCKET: R2Bucket;
 	ADMIN_PASSWORD: string;
 }
 
