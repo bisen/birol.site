@@ -54,6 +54,9 @@ export const ui = {
 		'work.4xdigital.description': 'Making digital advertising accessible to small and medium businesses through AI-powered campaign management.',
 		'work.sevkio.description': 'Logistics management tool designed specifically for small businesses to streamline their shipping operations.',
 		'work.forgekit.description': 'LLM-powered personal branding toolkit helping professionals craft their digital presence.',
+		'work.recete.description': 'A minimalistic recipe sharing platform focused on simplicity and beautiful presentation.',
+		'work.tag.recipes': 'Recipes',
+		'work.tag.community': 'Community',
 
 		// Projects Page
 		'projects.title': 'Projects',
@@ -165,6 +168,9 @@ export const ui = {
 		'work.4xdigital.description': 'Yapay zeka destekli kampanya yönetimi ile dijital reklamcılığı küçük ve orta ölçekli işletmeler için erişilebilir kılıyoruz.',
 		'work.sevkio.description': 'Küçük işletmelerin sevkiyat operasyonlarını kolaylaştırmak için özel olarak tasarlanmış lojistik yönetim aracı.',
 		'work.forgekit.description': 'Profesyonellerin dijital varlıklarını oluşturmalarına yardımcı olan LLM destekli kişisel marka araç seti.',
+		'work.recete.description': 'Sadelik ve güzel sunuma odaklanan minimalist bir tarif paylaşım platformu.',
+		'work.tag.recipes': 'Tarifler',
+		'work.tag.community': 'Topluluk',
 
 		// Projects Page
 		'projects.title': 'Projeler',
